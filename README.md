@@ -31,4 +31,4 @@ Non-spec features use an `experimental_` prefix (journeys, state sync, HITL, bri
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE).
