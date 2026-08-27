@@ -1,0 +1,37 @@
+{
+  "name": "@thegreataxios/webmcp-bridge",
+  "version": "0.0.0",
+  "description": "Local stdio MCP server bridging desktop clients to browser WebMCP tools via WebSocket",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "webmcp-bridge": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "keywords": ["webmcp", "mcp", "bridge", "cursor", "stdio"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thegreataxios/webmcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0"
+  }
+}

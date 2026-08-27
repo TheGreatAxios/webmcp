@@ -1,0 +1,6 @@
+# @thegreataxios/webmcp monorepo
+
+root = true
+
+[install]
+registry = "https://registry.npmjs.org"
