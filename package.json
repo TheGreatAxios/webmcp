@@ -3,10 +3,13 @@
   "private": true,
   "description": "webmcp monorepo — community implementation of the W3C WebMCP API (@thegreataxios/webmcp*)",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*",
+    "examples/_theme"
   ],
   "scripts": {
     "build": "bun run --filter '@thegreataxios/webmcp-core' build && bun run --filter '@thegreataxios/webmcp-bridge' build && bun run --filter '@thegreataxios/webmcp-react' build && bun run --filter '@thegreataxios/webmcp' build",
+    "build:examples": "bun run --filter '@thegreataxios/webmcp-example-*' build",
     "test": "bun run --filter '@thegreataxios/webmcp-core' test && bun run --filter '@thegreataxios/webmcp-bridge' test && bun run --filter '@thegreataxios/webmcp-react' test && bun run --filter '@thegreataxios/webmcp' test",
     "typecheck": "bun run --filter '@thegreataxios/*' typecheck",
     "clean": "rm -rf packages/*/dist"

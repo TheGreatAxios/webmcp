@@ -1,0 +1,443 @@
+/**
+ * webmcp examples — shared theme
+ *
+ * Direction: cool mist atelier — soft glacier surfaces, deep ink type,
+ * teal accent. Light by default. No purple glow, no cream/terracotta cliché.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Syne:wght@600;700;800&display=swap");
+
+:root {
+  --wm-ink: #12202e;
+  --wm-ink-soft: #2c3d4f;
+  --wm-ink-muted: #5b6b7c;
+  --wm-ink-faint: #8a97a5;
+
+  --wm-paper: #f3f6f8;
+  --wm-paper-2: #e8eef2;
+  --wm-surface: rgba(255, 255, 255, 0.78);
+  --wm-surface-solid: #ffffff;
+  --wm-surface-tint: rgba(11, 127, 122, 0.06);
+
+  --wm-accent: #0b7f7a;
+  --wm-accent-strong: #086560;
+  --wm-accent-soft: #d4efed;
+  --wm-accent-ink: #043f3c;
+
+  --wm-ok: #0f7a45;
+  --wm-ok-soft: #ddf5e8;
+  --wm-warn: #9a5b08;
+  --wm-warn-soft: #f8ebcf;
+  --wm-danger: #b42318;
+  --wm-danger-soft: #fde8e6;
+
+  --wm-border: rgba(18, 32, 46, 0.1);
+  --wm-border-strong: rgba(18, 32, 46, 0.18);
+  --wm-focus: rgba(11, 127, 122, 0.45);
+
+  --wm-font-display: "Syne", "Segoe UI", sans-serif;
+  --wm-font-body: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+
+  --wm-radius-sm: 8px;
+  --wm-radius: 14px;
+  --wm-radius-lg: 22px;
+
+  --wm-shadow-sm: 0 1px 2px rgba(18, 32, 46, 0.05);
+  --wm-shadow: 0 18px 50px rgba(18, 32, 46, 0.08);
+  --wm-shadow-lg: 0 28px 80px rgba(18, 32, 46, 0.12);
+
+  --wm-space-1: 0.25rem;
+  --wm-space-2: 0.5rem;
+  --wm-space-3: 0.75rem;
+  --wm-space-4: 1rem;
+  --wm-space-5: 1.5rem;
+  --wm-space-6: 2rem;
+  --wm-space-7: 3rem;
+  --wm-space-8: 4.5rem;
+
+  --wm-max: 72rem;
+  --wm-measure: 38rem;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--wm-font-body);
+  font-size: 1.015rem;
+  line-height: 1.55;
+  color: var(--wm-ink);
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(11, 127, 122, 0.14), transparent 55%),
+    radial-gradient(900px 600px at 92% 8%, rgba(18, 70, 110, 0.1), transparent 50%),
+    linear-gradient(165deg, #eef3f6 0%, #f7f5f1 48%, #e9f0f3 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(18, 32, 46, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 32, 46, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 20%, black 20%, transparent 75%);
+}
+
+#root,
+.wm-app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--wm-accent-strong);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  color: var(--wm-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--wm-accent);
+  outline-offset: 3px;
+}
+
+.wm-page {
+  width: min(100% - 2rem, var(--wm-max));
+  margin-inline: auto;
+  padding-block: clamp(1.75rem, 4vw, 3.25rem) 4rem;
+}
+
+.wm-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wm-space-4);
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.wm-brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-family: var(--wm-font-display);
+  font-weight: 800;
+  font-size: clamp(1.55rem, 3.2vw, 2rem);
+  letter-spacing: -0.04em;
+  color: var(--wm-ink);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.wm-brand span {
+  color: var(--wm-accent);
+}
+
+.wm-eyebrow {
+  margin: 0 0 var(--wm-space-3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wm-ink-muted);
+}
+
+.wm-hero {
+  display: grid;
+  gap: var(--wm-space-5);
+  padding-block: clamp(1rem, 3vw, 2rem) clamp(2rem, 5vw, 3.5rem);
+  max-width: 42rem;
+}
+
+.wm-hero h1,
+.wm-display {
+  margin: 0;
+  font-family: var(--wm-font-display);
+  font-weight: 700;
+  font-size: clamp(2.35rem, 6vw, 3.6rem);
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  color: var(--wm-ink);
+}
+
+.wm-lede,
+.wm-hero p {
+  margin: 0;
+  max-width: var(--wm-measure);
+  font-size: 1.08rem;
+  color: var(--wm-ink-soft);
+}
+
+.wm-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.wm-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: var(--wm-radius-sm);
+  padding: 0.72rem 1.15rem;
+  font-family: var(--wm-font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.wm-btn:active {
+  transform: translateY(1px);
+}
+
+.wm-btn-primary {
+  background: var(--wm-accent);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(11, 127, 122, 0.22);
+}
+
+.wm-btn-primary:hover {
+  background: var(--wm-accent-strong);
+}
+
+.wm-btn-ghost {
+  background: transparent;
+  border-color: var(--wm-border-strong);
+  color: var(--wm-ink-soft);
+}
+
+.wm-btn-ghost:hover {
+  border-color: var(--wm-ink);
+  color: var(--wm-ink);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.wm-btn-danger {
+  background: var(--wm-danger);
+  color: #fff;
+}
+
+.wm-btn-danger:hover {
+  filter: brightness(0.95);
+}
+
+.wm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.wm-section {
+  margin-top: clamp(1.5rem, 4vw, 2.75rem);
+  max-width: 46rem;
+}
+
+.wm-section h2 {
+  margin: 0 0 var(--wm-space-3);
+  font-family: var(--wm-font-display);
+  font-size: clamp(1.35rem, 2.5vw, 1.7rem);
+  letter-spacing: -0.03em;
+}
+
+.wm-section p {
+  margin: 0 0 var(--wm-space-4);
+  color: var(--wm-ink-soft);
+}
+
+.wm-panel {
+  background: var(--wm-surface);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--wm-border);
+  border-radius: var(--wm-radius);
+  box-shadow: var(--wm-shadow-sm);
+  padding: clamp(1rem, 2.5vw, 1.35rem);
+}
+
+.wm-panel + .wm-panel {
+  margin-top: var(--wm-space-4);
+}
+
+.wm-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--wm-border);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--wm-ink-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.wm-chip[data-tone="ok"] {
+  background: var(--wm-ok-soft);
+  border-color: transparent;
+  color: var(--wm-ok);
+}
+
+.wm-chip[data-tone="warn"] {
+  background: var(--wm-warn-soft);
+  border-color: transparent;
+  color: var(--wm-warn);
+}
+
+.wm-chip[data-tone="danger"] {
+  background: var(--wm-danger-soft);
+  border-color: transparent;
+  color: var(--wm-danger);
+}
+
+.wm-chip[data-tone="accent"] {
+  background: var(--wm-accent-soft);
+  border-color: transparent;
+  color: var(--wm-accent-ink);
+}
+
+.wm-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.wm-mono {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.86em;
+}
+
+.wm-result {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border-radius: var(--wm-radius-sm);
+  background: #0f1720;
+  color: #d7e2ec;
+  overflow: auto;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wm-empty {
+  color: var(--wm-ink-muted);
+  font-style: italic;
+}
+
+.wm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.wm-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--wm-border);
+}
+
+.wm-list li:last-child {
+  border-bottom: 0;
+}
+
+.wm-muted {
+  color: var(--wm-ink-muted);
+}
+
+.wm-footer {
+  margin-top: clamp(3rem, 8vw, 5rem);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--wm-border);
+  color: var(--wm-ink-muted);
+  font-size: 0.9rem;
+}
+
+.wm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(10, 18, 28, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.wm-dialog {
+  width: min(100%, 26rem);
+  background: var(--wm-surface-solid);
+  border: 1px solid var(--wm-border);
+  border-radius: var(--wm-radius-lg);
+  box-shadow: var(--wm-shadow-lg);
+  padding: 1.35rem 1.4rem 1.25rem;
+}
+
+.wm-dialog h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--wm-font-display);
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.wm-dialog p {
+  margin: 0 0 1.15rem;
+  color: var(--wm-ink-soft);
+}
+
+.wm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+@media (max-width: 640px) {
+  .wm-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .wm-page {
+    width: min(100% - 1.25rem, var(--wm-max));
+  }
+}
