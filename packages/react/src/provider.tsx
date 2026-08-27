@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,27 +12,32 @@ import {
 } from "react";
 import {
   cleanupPolyfill,
+  experimental_createJourneyRegistry,
   installPolyfill,
   isNativeModelContext,
   registerWebMCPElements,
+  setJourneyRegistry,
   type CallToolResult,
   type JsonSchema,
+  type JourneyRegistry,
   type ToolAnnotations,
   type ToolDescriptor,
 } from "@thegreataxios/webmcp-core";
-
-registerWebMCPElements();
 
 export interface WebMCPContextValue {
   available: boolean;
   native: boolean;
   appName?: string;
   appVersion?: string;
+  journeyRegistry: JourneyRegistry;
 }
+
+const defaultJourneyRegistry = experimental_createJourneyRegistry();
 
 const WebMCPContext = createContext<WebMCPContextValue>({
   available: false,
   native: false,
+  journeyRegistry: defaultJourneyRegistry,
 });
 
 export interface WebMCPProviderProps {
@@ -41,12 +47,21 @@ export interface WebMCPProviderProps {
 }
 
 export function WebMCPProvider({ name, version, children }: WebMCPProviderProps) {
+  const journeyRegistry = useMemo(() => experimental_createJourneyRegistry(), []);
   const [available, setAvailable] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    registerWebMCPElements();
     installPolyfill();
+    setJourneyRegistry(journeyRegistry);
     setAvailable(typeof document !== "undefined" && document.modelContext != null);
-    return () => cleanupPolyfill();
+  }, [journeyRegistry]);
+
+  useEffect(() => {
+    return () => {
+      setJourneyRegistry(null);
+      cleanupPolyfill();
+    };
   }, []);
 
   const value = useMemo(
@@ -55,20 +70,23 @@ export function WebMCPProvider({ name, version, children }: WebMCPProviderProps)
       native: isNativeModelContext(),
       appName: name,
       appVersion: version,
+      journeyRegistry,
     }),
-    [available, name, version],
+    [available, name, version, journeyRegistry],
   );
 
   return (
-    <webmcp-provider data-name={name} data-version={version ?? ""}>
+    <div data-webmcp-provider data-name={name} data-version={version ?? ""}>
       <WebMCPContext.Provider value={value}>{children}</WebMCPContext.Provider>
-    </webmcp-provider>
+    </div>
   );
 }
 
 export function useWebMCP(): WebMCPContextValue {
   return useContext(WebMCPContext);
 }
+
+const TOOL_OWNERS = new Map<string, symbol>();
 
 export interface WebMCPToolProps {
   name: string;
@@ -89,15 +107,28 @@ export function WebMCPTool({
   exposedTo,
   handler,
 }: WebMCPToolProps) {
+  const { available } = useWebMCP();
   const handlerRef = useRef(handler);
   handlerRef.current = handler;
+
+  const schemaKey = useMemo(() => JSON.stringify({ inputSchema, annotations, title }), [
+    inputSchema,
+    annotations,
+    title,
+  ]);
 
   const stableHandler = useCallback(async (args: Record<string, unknown>) => {
     return await handlerRef.current(args);
   }, []);
 
   useEffect(() => {
-    if (typeof document === "undefined" || !document.modelContext) return;
+    if (!available || typeof document === "undefined" || !document.modelContext) return;
+
+    const owner = Symbol(name);
+    const isOwner = !TOOL_OWNERS.has(name);
+    if (isOwner) {
+      TOOL_OWNERS.set(name, owner);
+    }
 
     const controller = new AbortController();
     const descriptor: ToolDescriptor = {
@@ -109,25 +140,18 @@ export function WebMCPTool({
       execute: stableHandler,
     };
 
-    const result = document.modelContext.registerTool(descriptor, {
-      signal: controller.signal,
-      exposedTo,
-    });
-
-    if (result && typeof (result as Promise<unknown>).then === "function") {
-      (result as Promise<unknown>).catch(() => {});
+    if (isOwner) {
+      document.modelContext
+        .registerTool(descriptor, { signal: controller.signal, exposedTo })
+        .catch(() => {});
     }
 
-    return () => controller.abort();
-  }, [name, description, title, inputSchema, annotations, exposedTo, stableHandler]);
+    return () => {
+      if (TOOL_OWNERS.get(name) !== owner) return;
+      TOOL_OWNERS.delete(name);
+      controller.abort();
+    };
+  }, [available, name, description, schemaKey, exposedTo, stableHandler]);
 
-  return (
-    <webmcp-tool
-      name={name}
-      description={description}
-      title={title ?? undefined}
-      input-schema={inputSchema ? JSON.stringify(inputSchema) : undefined}
-      annotations={annotations ? JSON.stringify(annotations) : undefined}
-    />
-  );
+  return null;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@thegreataxios/webmcp-react",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React bindings for WebMCP — providers define tools, hooks consume context and sync",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -37,6 +37,8 @@
     "@thegreataxios/webmcp-core": "workspace:*"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "^20.0.0",
+    "@testing-library/react": "^16.3.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "react": "^19.2.0",

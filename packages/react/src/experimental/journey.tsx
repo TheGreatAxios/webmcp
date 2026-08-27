@@ -1,15 +1,8 @@
 /// <reference path="../jsx.d.ts" />
 import type { ReactNode } from "react";
-import {
-  experimental_createJourneyRegistry,
-  type JourneyDefinition,
-} from "@thegreataxios/webmcp-core";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
-const JourneyContext = createContext<{
-  registry: ReturnType<typeof experimental_createJourneyRegistry>;
-  active: string[];
-} | null>(null);
+import { useEffect } from "react";
+import type { JourneyDefinition } from "@thegreataxios/webmcp-core";
+import { useWebMCP } from "../provider";
 
 export interface ExperimentalWebMCPJourneyProps {
   name: string;
@@ -20,9 +13,7 @@ export interface ExperimentalWebMCPJourneyProps {
   children?: ReactNode;
 }
 
-/**
- * experimental — phase-scoped tool exposure (W3C skills #161).
- */
+/** experimental — phase-scoped tool exposure (W3C #161) */
 export function experimental_WebMCPJourney({
   name,
   description,
@@ -31,51 +22,27 @@ export function experimental_WebMCPJourney({
   when = true,
   children,
 }: ExperimentalWebMCPJourneyProps) {
-  const ctx = useContext(JourneyContext);
-  const active = when;
+  const { journeyRegistry } = useWebMCP();
 
   useEffect(() => {
-    if (!ctx) return;
     const def: JourneyDefinition = { name, description, tools, steps };
-    ctx.registry.register(def);
-    ctx.registry.setJourneyActive(name, active);
+    journeyRegistry.register(def);
+    journeyRegistry.setJourneyActive(name, when);
     return () => {
-      ctx.registry.setJourneyActive(name, false);
-      ctx.registry.unregister(name);
+      journeyRegistry.setJourneyActive(name, false);
+      journeyRegistry.unregister(name);
     };
-  }, [ctx, name, description, tools, steps, active]);
+  }, [journeyRegistry, name, description, tools, steps, when]);
 
   if (!when) return null;
 
-  return (
-    <webmcp-journey name={name} data-description={description ?? ""}>
-      {children}
-    </webmcp-journey>
-  );
-}
-
-export function experimental_WebMCPJourneyProvider({ children }: { children: ReactNode }) {
-  const registry = useMemo(() => experimental_createJourneyRegistry(), []);
-  const [active, setActive] = useState<string[]>([]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActive(registry.getActiveJourneys().map((j) => j.name));
-    }, 100);
-    return () => clearInterval(interval);
-  }, [registry]);
-
-  return (
-    <JourneyContext.Provider value={{ registry, active }}>
-      {children}
-    </JourneyContext.Provider>
-  );
+  return <webmcp-journey name={name} data-description={description ?? ""}>{children}</webmcp-journey>;
 }
 
 export function experimental_useWebMCPJourney() {
-  const ctx = useContext(JourneyContext);
+  const { journeyRegistry } = useWebMCP();
   return {
-    activeJourneys: ctx?.active ?? [],
-    isToolExposed: (toolName: string) => ctx?.registry.isToolExposed(toolName) ?? true,
+    activeJourneys: journeyRegistry.getActiveJourneys().map((j) => j.name),
+    isToolExposed: (toolName: string) => journeyRegistry.isToolExposed(toolName),
   };
 }

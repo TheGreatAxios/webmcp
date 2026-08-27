@@ -10,7 +10,20 @@ export {
 
 export {
   experimental_WebMCPJourney,
-  experimental_WebMCPJourneyProvider,
   experimental_useWebMCPJourney,
   type ExperimentalWebMCPJourneyProps,
 } from "./experimental/journey";
+
+export {
+  experimental_WebMCPConfirmProvider,
+  experimental_useWebMCPConfirm,
+  experimental_WebMCPGuardedTool,
+  type GuardedToolProps,
+  type PendingConfirmation,
+} from "./experimental/confirm";
+
+export {
+  experimental_WebMCPBridgeProvider,
+  experimental_useWebMCPBridgeStatus,
+  type ExperimentalWebMCPBridgeProviderProps,
+} from "./experimental/bridge";

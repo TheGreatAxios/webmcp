@@ -1,6 +1,6 @@
 {
   "name": "@thegreataxios/webmcp-bridge",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Local stdio MCP server bridging desktop clients to browser WebMCP tools via WebSocket",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -32,6 +32,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.0"
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@thegreataxios/webmcp-core": "workspace:*"
   }
 }

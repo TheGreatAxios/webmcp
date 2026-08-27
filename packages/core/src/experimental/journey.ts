@@ -3,14 +3,23 @@ import type { JourneyDefinition, JourneyRegistry } from "../types";
 export function experimental_createJourneyRegistry(): JourneyRegistry {
   const journeys = new Map<string, JourneyDefinition>();
   const active = new Set<string>();
+  const listeners = new Set<() => void>();
+
+  const notify = () => {
+    for (const listener of listeners) {
+      listener();
+    }
+  };
 
   return {
     register(definition) {
       journeys.set(definition.name, definition);
+      notify();
     },
     unregister(name) {
       journeys.delete(name);
       active.delete(name);
+      notify();
     },
     getActiveJourneys() {
       return Array.from(active)
@@ -29,6 +38,11 @@ export function experimental_createJourneyRegistry(): JourneyRegistry {
       if (!journeys.has(name)) return;
       if (isActive) active.add(name);
       else active.delete(name);
+      notify();
+    },
+    addChangeListener(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
   };
 }

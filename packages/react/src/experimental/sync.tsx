@@ -1,4 +1,4 @@
-import { useRef, useState, type Dispatch, type SetStateAction, type ReactNode } from "react";
+import { useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import type { CallToolResult } from "@thegreataxios/webmcp-core";
 import { WebMCPTool } from "../provider";
 
@@ -16,13 +16,10 @@ export interface WebMCPSyncOptions<T> {
 export interface WebMCPSyncResult<T> {
   state: T;
   setState: Dispatch<SetStateAction<T>>;
-  /** Render inside WebMCPProvider to register sync-bound tools */
   Tools: ReactNode;
 }
 
-/**
- * experimental — binds local state to tool handlers so agent invocations update UI.
- */
+/** experimental — agent tool calls update React state automatically */
 export function experimental_useWebMCPSync<T>(options: WebMCPSyncOptions<T>): WebMCPSyncResult<T> {
   const [state, setState] = useState<T>(options.initial);
   const stateRef = useRef(state);
@@ -36,7 +33,7 @@ export function experimental_useWebMCPSync<T>(options: WebMCPSyncOptions<T>): We
         <WebMCPTool
           key={name}
           name={name}
-          description={`State-synced tool: ${name}`}
+          description={`State-synced: ${name}`}
           handler={async (args) => {
             const previous = stateRef.current;
             const next = await reducer(previous, args);

@@ -5,8 +5,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --filter '@thegreataxios/*' build",
-    "test": "bun test",
+    "build": "bun run --filter '@thegreataxios/webmcp-core' build && bun run --filter '@thegreataxios/webmcp-bridge' build && bun run --filter '@thegreataxios/webmcp-react' build",
+    "test": "bun run --filter '@thegreataxios/webmcp-core' test && bun run --filter '@thegreataxios/webmcp-bridge' test && bun run --filter '@thegreataxios/webmcp-react' test",
     "typecheck": "bun run --filter '@thegreataxios/*' typecheck",
     "clean": "rm -rf packages/*/dist"
   },

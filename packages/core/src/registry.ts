@@ -1,4 +1,5 @@
 import type { RegisteredTool, ToolDescriptor } from "./types";
+import { validateToolDescriptor } from "./validation";
 
 type ChangeListener = () => void;
 
@@ -13,7 +14,7 @@ export interface ToolRegistry {
 export function createToolRegistry(): ToolRegistry {
   const tools = new Map<string, ToolDescriptor>();
   const listeners = new Set<ChangeListener>();
-  const abortControllers = new Map<string, AbortController>();
+  const abortCleanups = new Map<string, () => void>();
 
   const notify = () => {
     for (const listener of listeners) {
@@ -26,31 +27,39 @@ export function createToolRegistry(): ToolRegistry {
       if (options?.signal?.aborted) {
         throw options.signal.reason ?? new DOMException("Aborted", "AbortError");
       }
-      if (!descriptor.name || !descriptor.description || typeof descriptor.execute !== "function") {
-        throw new TypeError("Invalid tool descriptor");
-      }
+
+      validateToolDescriptor(descriptor);
+
       if (tools.has(descriptor.name)) {
-        throw new DOMException(`Tool "${descriptor.name}" already registered`, "InvalidStateError");
+        throw new DOMException(
+          `Tool "${descriptor.name}" is already registered`,
+          "InvalidStateError",
+        );
       }
 
       tools.set(descriptor.name, descriptor);
 
       if (options?.signal) {
+        const signal = options.signal;
         const onAbort = () => {
           tools.delete(descriptor.name);
-          abortControllers.delete(descriptor.name);
+          abortCleanups.delete(descriptor.name);
           notify();
         };
-        options.signal.addEventListener("abort", onAbort, { once: true });
-        abortControllers.set(descriptor.name, new AbortController());
+        signal.addEventListener("abort", onAbort, { once: true });
+        abortCleanups.set(descriptor.name, () => signal.removeEventListener("abort", onAbort));
       }
 
       notify();
     },
 
     unregister(name) {
+      const cleanup = abortCleanups.get(name);
+      if (cleanup) {
+        cleanup();
+        abortCleanups.delete(name);
+      }
       if (tools.delete(name)) {
-        abortControllers.delete(name);
         notify();
       }
     },

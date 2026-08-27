@@ -1,6 +1,6 @@
 /**
- * Minimal types aligned with W3C WebMCP / MCP tool vocabulary.
- * Replace with `webmcp-types` when publishing if desired.
+ * Types aligned with W3C WebMCP tool vocabulary.
+ * @see https://github.com/webmachinelearning/webmcp
  */
 
 export type JsonSchema = Record<string, unknown>;
@@ -49,7 +49,6 @@ export interface RegisteredTool {
   inputSchema?: JsonSchema;
   outputSchema?: JsonSchema;
   annotations?: ToolAnnotations;
-  origin?: string;
 }
 
 export interface WebMCPPolyfillMarker {
@@ -74,9 +73,7 @@ export interface ModelContextTesting {
 export interface JourneyDefinition {
   name: string;
   description?: string;
-  /** Tool names exposed while this journey is active */
   tools: string[];
-  /** Optional ordered hints for agents (not enforced by browser) */
   steps?: string[];
 }
 
@@ -86,4 +83,25 @@ export interface JourneyRegistry {
   getActiveJourneys(): JourneyDefinition[];
   isToolExposed(toolName: string): boolean;
   setJourneyActive(name: string, active: boolean): void;
+  addChangeListener(listener: () => void): () => void;
+}
+
+/** Wire protocol between page and @thegreataxios/webmcp-bridge */
+export type BridgeClientMessage =
+  | { type: "auth"; token: string }
+  | { type: "sync_tools"; tools: BridgeToolSummary[] }
+  | { type: "tool_result"; id: string; result: CallToolResult | { error: string } };
+
+export type BridgeServerMessage =
+  | { type: "auth_required" }
+  | { type: "auth_ok" }
+  | { type: "error"; message: string }
+  | { type: "execute_tool"; id: string; name: string; args: Record<string, unknown> };
+
+export interface BridgeToolSummary {
+  name: string;
+  description: string;
+  inputSchema?: JsonSchema;
+  title?: string;
+  annotations?: ToolAnnotations;
 }
