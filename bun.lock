@@ -12,7 +12,7 @@
     },
     "packages/bridge": {
       "name": "@thegreataxios/webmcp-bridge",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "bin": {
         "webmcp-bridge": "./dist/cli.js",
       },
@@ -23,11 +23,11 @@
     },
     "packages/core": {
       "name": "@thegreataxios/webmcp-core",
-      "version": "0.0.0",
+      "version": "0.1.0",
     },
     "packages/react": {
       "name": "@thegreataxios/webmcp-react",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@thegreataxios/webmcp-core": "workspace:*",
       },
@@ -43,6 +43,15 @@
       "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
+      },
+    },
+    "packages/webmcp": {
+      "name": "@thegreataxios/webmcp",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thegreataxios/webmcp-bridge": "workspace:*",
+        "@thegreataxios/webmcp-core": "workspace:*",
+        "@thegreataxios/webmcp-react": "workspace:*",
       },
     },
   },
@@ -174,6 +183,8 @@
     "@testing-library/dom": ["@testing-library/dom@10.4.1", "", { "dependencies": { "@babel/code-frame": "^7.10.4", "@babel/runtime": "^7.12.5", "@types/aria-query": "^5.0.1", "aria-query": "5.3.0", "dom-accessibility-api": "^0.5.9", "lz-string": "^1.5.0", "picocolors": "1.1.1", "pretty-format": "^27.0.2" } }, "sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg=="],
 
     "@testing-library/react": ["@testing-library/react@16.3.2", "", { "dependencies": { "@babel/runtime": "^7.12.5" }, "peerDependencies": { "@testing-library/dom": "^10.0.0", "@types/react": "^18.0.0 || ^19.0.0", "@types/react-dom": "^18.0.0 || ^19.0.0", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-XU5/SytQM+ykqMnAnvB2umaJNIOsLF3PVv//1Ew4CTcpz0/BRyy/af40qqrt7SjKpDdT1saBMc42CUok5gaw+g=="],
+
+    "@thegreataxios/webmcp": ["@thegreataxios/webmcp@workspace:packages/webmcp"],
 
     "@thegreataxios/webmcp-bridge": ["@thegreataxios/webmcp-bridge@workspace:packages/bridge"],
 

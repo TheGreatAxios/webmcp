@@ -1,12 +1,15 @@
-# @thegreataxios/webmcp — Implementation Plan
+# webmcp — implementation plan
+
+Community implementation of the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API. **Not** an official W3C or spec-editor product. Published as `@thegreataxios/webmcp*`.
 
 ## Deliverables
 
 | Package | Stable | Experimental |
 |---------|--------|--------------|
-| `webmcp-core` | polyfill, registry, validation, custom elements, `createPageBridgeClient` | journeys, journey-filtered tool exposure |
-| `webmcp-react` | `WebMCPProvider`, `WebMCPTool`, `useWebMCP` | `experimental_useWebMCPSync`, `experimental_WebMCPJourney`, `experimental_useWebMCPConfirm`, `experimental_connectWebMCPBridge` |
-| `webmcp-bridge` | `webmcp-bridge` CLI, localhost WS + stdio MCP | — |
+| `@thegreataxios/webmcp` | umbrella re-exports | — |
+| `@thegreataxios/webmcp-core` | polyfill, registry, validation, custom elements, `createPageBridgeClient` | journeys, journey-filtered tool exposure |
+| `@thegreataxios/webmcp-react` | `WebMCPProvider`, `WebMCPTool`, `useWebMCP` | `experimental_useWebMCPSync`, `experimental_WebMCPJourney`, `experimental_useWebMCPConfirm`, bridge provider |
+| `@thegreataxios/webmcp-bridge` | `webmcp-bridge` CLI, localhost WS + stdio MCP | — |
 
 ## Data flow
 

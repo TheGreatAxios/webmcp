@@ -1,23 +1,54 @@
-# @thegreataxios/webmcp
+# webmcp
 
-Agent-native toolkit for the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API.
+**A community implementation of the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API** — browser tools for AI agents via `document.modelContext`.
 
-**Providers define. Hooks consume.** Spec-aligned core; better agent UX via `experimental_*` APIs.
+Published as `@thegreataxios/webmcp*` on npm. **Providers define. Hooks consume.** Spec-aligned core plus better agent UX via `experimental_*` APIs.
+
+## Not official
+
+This repository and the `@thegreataxios/webmcp*` packages are **independent open-source software**. They are **not** official W3C specifications, **not** maintained by the [Web Machine Learning Community Group](https://www.w3.org/community/webmachinelearning/), and **not** endorsed by the WebMCP spec editors.
+
+For the normative spec work and discussion, use the official resources:
+
+| Resource | URL |
+|----------|-----|
+| **WebMCP specification (GitHub)** | [github.com/webmachinelearning/webmcp](https://github.com/webmachinelearning/webmcp) |
+| **Web Machine Learning Community Group** | [w3.org/community/webmachinelearning](https://www.w3.org/community/webmachinelearning/) |
+| **Web Platform Design Principles** (context) | [w3.org/TR/design-principles](https://www.w3.org/TR/design-principles/) |
+
+> **Note:** [webmcp.dev](https://webmcp.dev) is a separate third-party project (widget + MCP client integration). It is not the W3C spec and is unrelated to this monorepo.
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
+| npm package | Description |
+|-------------|-------------|
+| [`@thegreataxios/webmcp`](./packages/webmcp) | Umbrella re-exports (`/react`, `/bridge` subpaths) |
 | [`@thegreataxios/webmcp-core`](./packages/core) | Polyfill, registry, custom elements, page bridge client |
 | [`@thegreataxios/webmcp-react`](./packages/react) | React provider, tools, sync, journeys, confirm, bridge |
-| [`@thegreataxios/webmcp-bridge`](./packages/bridge) | stdio MCP ↔ localhost WebSocket |
+| [`@thegreataxios/webmcp-bridge`](./packages/bridge) | stdio MCP ↔ localhost WebSocket (`webmcp-bridge` CLI) |
+
+```bash
+# Typical installs (pick what you need)
+bun add @thegreataxios/webmcp-core
+bun add @thegreataxios/webmcp-react @thegreataxios/webmcp-core
+bun add -g @thegreataxios/webmcp-bridge
+
+# Or umbrella imports
+bun add @thegreataxios/webmcp
+```
+
+```ts
+import { installPolyfill } from "@thegreataxios/webmcp";
+import { WebMCPProvider } from "@thegreataxios/webmcp/react";
+import { createMcpBridge } from "@thegreataxios/webmcp/bridge";
+```
 
 ## Development
 
 ```bash
 bun install
-bun test
 bun run build
+bun run test
 bun run typecheck
 ```
 
@@ -25,9 +56,9 @@ bun run typecheck
 
 See [PROJECT.md](./PROJECT.md) and [PLAN.md](./PLAN.md).
 
-## experimental_* policy
+## `experimental_*` policy
 
-Non-spec features use an `experimental_` prefix (journeys, state sync, HITL, bridge). Breaking changes allowed there without major stable semver bumps.
+Non-spec features use an `experimental_` prefix (journeys, state sync, HITL, bridge). Breaking changes are allowed there without major stable semver bumps on the core API.
 
 ## License
 

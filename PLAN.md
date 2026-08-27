@@ -1,14 +1,18 @@
-# @thegreataxios/webmcp — Planning
+# webmcp — planning
 
-Agent-native WebMCP toolkit aligned with the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) spec. Spec-faithful core; better agentic UX via clearly marked `experimental_*` APIs.
+Community implementation of the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API. **Not** official W3C software. Published as `@thegreataxios/webmcp*`.
+
+Spec-faithful core; better agentic UX via clearly marked `experimental_*` APIs.
 
 ## Naming (final)
 
+**Product name:** webmcp  
 **Scope:** `@thegreataxios`  
-**Prefix:** `webmcp-*` (not `agent-*`) — ties to the W3C API (`document.modelContext`), discoverable, distinct from generic "agent" packages.
+**Prefix:** `webmcp-*` — ties to the W3C API (`document.modelContext`), discoverable on npm.
 
 | Package | npm name | Role |
 |---------|----------|------|
+| Umbrella | `@thegreataxios/webmcp` | Re-exports core + `/react` + `/bridge` subpaths |
 | Core | `@thegreataxios/webmcp-core` | Registry, polyfill, custom elements, experimental journeys |
 | React | `@thegreataxios/webmcp-react` | Providers define, hooks consume |
 | Bridge | `@thegreataxios/webmcp-bridge` | Local stdio MCP ↔ page WebSocket (no Chrome extension) |

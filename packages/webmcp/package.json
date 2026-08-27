@@ -1,0 +1,48 @@
+{
+  "name": "@thegreataxios/webmcp",
+  "version": "0.1.0",
+  "description": "webmcp umbrella package — re-exports core, react, and bridge",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    },
+    "./bridge": {
+      "types": "./dist/bridge.d.ts",
+      "import": "./dist/bridge.js",
+      "require": "./dist/bridge.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "LICENSE"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "keywords": ["webmcp", "model-context", "document.modelContext", "w3c"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thegreataxios/webmcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@thegreataxios/webmcp-core": "workspace:*",
+    "@thegreataxios/webmcp-react": "workspace:*",
+    "@thegreataxios/webmcp-bridge": "workspace:*"
+  }
+}
