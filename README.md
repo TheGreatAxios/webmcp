@@ -53,8 +53,7 @@ Standalone Vite + React demos live in [`examples/`](./examples). They share a un
 | [`examples/sync`](./examples/sync) | 43111 | Live state sync |
 | [`examples/journeys`](./examples/journeys) | 43112 | Journey-scoped tools |
 | [`examples/confirm`](./examples/confirm) | 43113 | HITL confirmations |
-
-More demos (`bridge`) land on a stacked follow-up branch.
+| [`examples/bridge`](./examples/bridge) | 43114 | Cursor MCP bridge |
 
 ```bash
 bun install
