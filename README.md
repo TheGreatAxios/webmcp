@@ -38,7 +38,6 @@ bun add @thegreataxios/webmcp
 ```
 
 ```ts
-import { installPolyfill } from "@thegreataxios/webmcp";
 import { WebMCPProvider } from "@thegreataxios/webmcp/react";
 import { createMcpBridge } from "@thegreataxios/webmcp/bridge";
 ```
@@ -54,7 +53,7 @@ bun run typecheck
 
 ## Architecture
 
-See [PROJECT.md](./PROJECT.md) and [PLAN.md](./PLAN.md).
+See [PROJECT.md](./PROJECT.md).
 
 ## `experimental_*` policy
 

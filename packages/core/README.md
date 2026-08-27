@@ -1,6 +1,8 @@
 # @thegreataxios/webmcp-core
 
-Spec-aligned core for [W3C WebMCP](https://github.com/webmachinelearning/webmcp): `document.modelContext` polyfill, tool registry, custom elements, and local bridge client.
+Spec-aligned core for the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API: `document.modelContext` polyfill, tool registry, custom elements, and local bridge client.
+
+**Not official W3C software** — a community implementation by [@thegreataxios](https://github.com/thegreataxios). See the [repository README](https://github.com/thegreataxios/webmcp#not-official) for official spec links.
 
 ## Install
 
