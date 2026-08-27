@@ -12,14 +12,26 @@ bun add @thegreataxios/webmcp-core
 
 ## Stable API
 
-### Polyfill
+### When do you call `installPolyfill()`?
+
+**Usually you don’t import it.**
+
+| Setup | Polyfill |
+|-------|----------|
+| **React** — `WebMCPProvider` from `webmcp-react` | Installed automatically on mount |
+| **HTML** — `<webmcp-provider>` after `registerWebMCPElements()` | Installed when the element connects |
+| **Vanilla JS** — no provider/element | Call `installPolyfill()` yourself before `registerTool` |
+| **Native Chrome WebMCP** | `installPolyfill()` is a no-op; the browser API is used |
+
+`installPolyfill` exists for imperative/vanilla apps and tests. It is **not** meant to be imported in every app entry file.
 
 ```ts
 import { installPolyfill, cleanupPolyfill, isNativeModelContext } from "@thegreataxios/webmcp-core";
 
-installPolyfill(); // no-op when Chrome native WebMCP exists
-// document.modelContext.registerTool(...)
-cleanupPolyfill();
+// Only when you are not using WebMCPProvider or <webmcp-provider>
+installPolyfill();
+await document.modelContext!.registerTool({ ... });
+cleanupPolyfill(); // pair with install when you own the page lifecycle
 ```
 
 ### Register tools (vanilla)
@@ -49,7 +61,7 @@ await document.modelContext.registerTool({
 
 ```ts
 import { registerWebMCPElements } from "@thegreataxios/webmcp-core";
-registerWebMCPElements();
+registerWebMCPElements(); // defines elements; polyfill runs when <webmcp-provider> mounts
 ```
 
 ### Bridge page client
