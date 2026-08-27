@@ -38,8 +38,9 @@ bun run dev
 |---------|------|----------------|---------|
 | [`shell`](./shell) | 43109 | foundation | Blank themed shell |
 | [`tools`](./tools) | 43110 | tools | `WebMCPProvider` + `WebMCPTool` |
+| [`sync`](./sync) | 43111 | sync | `experimental_useWebMCPSync` |
 
-Later stack PRs add `sync`, `journeys`, `confirm`, and `bridge`.
+Later stack PRs add `journeys`, `confirm`, and `bridge`.
 
 ## Local tool exercise (no bridge)
 
