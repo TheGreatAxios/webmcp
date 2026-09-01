@@ -30,6 +30,24 @@
         "vite": "^6.3.5",
       },
     },
+    "examples/sync": {
+      "name": "@thegreataxios/webmcp-example-sync",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thegreataxios/webmcp-core": "workspace:*",
+        "@thegreataxios/webmcp-examples-theme": "workspace:*",
+        "@thegreataxios/webmcp-react": "workspace:*",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+      },
+      "devDependencies": {
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^4.7.0",
+        "typescript": "^5.9.3",
+        "vite": "^6.3.5",
+      },
+    },
     "examples/tools": {
       "name": "@thegreataxios/webmcp-example-tools",
       "version": "0.1.0",
@@ -267,6 +285,8 @@
     "@thegreataxios/webmcp-core": ["@thegreataxios/webmcp-core@workspace:packages/core"],
 
     "@thegreataxios/webmcp-example-shell": ["@thegreataxios/webmcp-example-shell@workspace:examples/shell"],
+
+    "@thegreataxios/webmcp-example-sync": ["@thegreataxios/webmcp-example-sync@workspace:examples/sync"],
 
     "@thegreataxios/webmcp-example-tools": ["@thegreataxios/webmcp-example-tools@workspace:examples/tools"],
 

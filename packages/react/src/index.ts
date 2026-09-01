@@ -6,6 +6,7 @@ export {
   experimental_useWebMCPSync,
   type WebMCPSyncOptions,
   type WebMCPSyncResult,
+  type WebMCPSyncTool,
 } from "./experimental/sync";
 
 export {
