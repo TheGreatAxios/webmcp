@@ -4,20 +4,6 @@
 
 Published as `@thegreataxios/webmcp*` on npm. **Providers define. Hooks consume.** Spec-aligned core plus better agent UX via `experimental_*` APIs.
 
-## Not official
-
-This repository and the `@thegreataxios/webmcp*` packages are **independent open-source software**. They are **not** official W3C specifications, **not** maintained by the [Web Machine Learning Community Group](https://www.w3.org/community/webmachinelearning/), and **not** endorsed by the WebMCP spec editors.
-
-For the normative spec work and discussion, use the official resources:
-
-| Resource | URL |
-|----------|-----|
-| **WebMCP specification (GitHub)** | [github.com/webmachinelearning/webmcp](https://github.com/webmachinelearning/webmcp) |
-| **Web Machine Learning Community Group** | [w3.org/community/webmachinelearning](https://www.w3.org/community/webmachinelearning/) |
-| **Web Platform Design Principles** (context) | [w3.org/TR/design-principles](https://www.w3.org/TR/design-principles/) |
-
-> **Note:** [webmcp.dev](https://webmcp.dev) is a separate third-party project (widget + MCP client integration). It is not the W3C spec and is unrelated to this monorepo.
-
 ## Packages
 
 | npm package | Description |
@@ -58,6 +44,21 @@ See [PROJECT.md](./PROJECT.md).
 ## `experimental_*` policy
 
 Non-spec features use an `experimental_` prefix (journeys, state sync, HITL, bridge). Breaking changes are allowed there without major stable semver bumps on the core API.
+
+## Project status
+
+This repository and the `@thegreataxios/webmcp*` packages are independent open-source software. They are not official W3C specifications, are not maintained by the [Web Machine Learning Community Group](https://www.w3.org/community/webmachinelearning/), and are not endorsed by the WebMCP spec editors.
+
+For normative spec work and discussion, see the official resources:
+
+| Resource | URL |
+|----------|-----|
+| **WebMCP specification (GitHub)** | [github.com/webmachinelearning/webmcp](https://github.com/webmachinelearning/webmcp) |
+| **Web Machine Learning Community Group** | [w3.org/community/webmachinelearning](https://www.w3.org/community/webmachinelearning/) |
+| **Web Platform Design Principles** (context) | [w3.org/TR/design-principles](https://www.w3.org/TR/design-principles/) |
+
+> [!NOTE]
+> [webmcp.dev](https://webmcp.dev) is a separate third-party project (widget + MCP client integration). It is not the W3C spec and is unrelated to this monorepo.
 
 ## License
 
