@@ -40,8 +40,9 @@ bun run dev
 | [`tools`](./tools) | 43110 | tools | `WebMCPProvider` + `WebMCPTool` |
 | [`sync`](./sync) | 43111 | sync | `experimental_useWebMCPSync` |
 | [`journeys`](./journeys) | 43112 | journeys | Journey-scoped tool visibility |
+| [`confirm`](./confirm) | 43113 | confirm | Guarded tools + confirm dialog |
 
-Later stack PRs add `confirm` and `bridge`.
+Later stack PR adds `bridge`.
 
 ## Local tool exercise (no bridge)
 

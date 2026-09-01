@@ -14,6 +14,24 @@
       "name": "@thegreataxios/webmcp-examples-theme",
       "version": "0.1.0",
     },
+    "examples/confirm": {
+      "name": "@thegreataxios/webmcp-example-confirm",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thegreataxios/webmcp-core": "workspace:*",
+        "@thegreataxios/webmcp-examples-theme": "workspace:*",
+        "@thegreataxios/webmcp-react": "workspace:*",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+      },
+      "devDependencies": {
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^4.7.0",
+        "typescript": "^5.9.3",
+        "vite": "^6.3.5",
+      },
+    },
     "examples/journeys": {
       "name": "@thegreataxios/webmcp-example-journeys",
       "version": "0.1.0",
@@ -301,6 +319,8 @@
     "@thegreataxios/webmcp-bridge": ["@thegreataxios/webmcp-bridge@workspace:packages/bridge"],
 
     "@thegreataxios/webmcp-core": ["@thegreataxios/webmcp-core@workspace:packages/core"],
+
+    "@thegreataxios/webmcp-example-confirm": ["@thegreataxios/webmcp-example-confirm@workspace:examples/confirm"],
 
     "@thegreataxios/webmcp-example-journeys": ["@thegreataxios/webmcp-example-journeys@workspace:examples/journeys"],
 
