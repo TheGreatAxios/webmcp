@@ -31,3 +31,5 @@ await navigator.modelContextTesting.executeTool(
 Known SKUs: `atlas-mug`, `harbor-tote`, `lumen-lamp`, `field-notebook`.
 Quantities must be whole numbers from 0–100 (`add_to_cart` requires at least
 1). Unknown SKUs, missing cart items, and invalid quantities return tool errors.
+The console helper is polyfill-only; native WebMCP browsers should exercise
+tools through a compatible agent or browser tool client.

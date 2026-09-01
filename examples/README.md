@@ -46,11 +46,18 @@ Later stack PR adds `bridge`.
 
 ## Local tool exercise (no bridge)
 
-In the browser console on feature example pages:
+In the browser console on feature example pages using the polyfill:
 
 ```js
 await navigator.modelContextTesting.listTools();
-await navigator.modelContextTesting.executeTool("tool_name", { /* args */ });
+await navigator.modelContextTesting.executeTool(
+  "tool_name",
+  JSON.stringify({ /* args */ }),
+);
 ```
+
+Native `document.modelContext` implementations do not expose the polyfill-only
+`navigator.modelContextTesting` API; use a compatible agent or browser tool
+client instead.
 
 Use the bridge example + `webmcp-bridge` when you want Cursor / Claude Desktop to call tools.
