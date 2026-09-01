@@ -17,6 +17,7 @@ export function experimental_createJourneyRegistry(): JourneyRegistry {
       notify();
     },
     unregister(name) {
+      if (!journeys.has(name)) return;
       journeys.delete(name);
       active.delete(name);
       notify();
@@ -36,6 +37,8 @@ export function experimental_createJourneyRegistry(): JourneyRegistry {
     },
     setJourneyActive(name, isActive) {
       if (!journeys.has(name)) return;
+      const changed = isActive ? !active.has(name) : active.has(name);
+      if (!changed) return;
       if (isActive) active.add(name);
       else active.delete(name);
       notify();
