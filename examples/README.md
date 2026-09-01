@@ -37,8 +37,9 @@ bun run dev
 | Example | Port | Branch / stack | Feature |
 |---------|------|----------------|---------|
 | [`shell`](./shell) | 43109 | foundation | Blank themed shell |
+| [`tools`](./tools) | 43110 | tools | `WebMCPProvider` + `WebMCPTool` |
 
-Later stack PRs add `tools`, `sync`, `journeys`, `confirm`, and `bridge`.
+Later stack PRs add `sync`, `journeys`, `confirm`, and `bridge`.
 
 ## Local tool exercise (no bridge)
 
