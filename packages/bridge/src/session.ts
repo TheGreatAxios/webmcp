@@ -10,6 +10,11 @@ export class PageSession {
     string,
     { resolve: (value: unknown) => void; reject: (err: Error) => void }
   >();
+  #onToolsChanged?: () => void;
+
+  constructor(onToolsChanged?: () => void) {
+    this.#onToolsChanged = onToolsChanged;
+  }
 
   setSocket(ws: ServerWebSocket<WsData>) {
     this.#ws = ws;
@@ -17,6 +22,7 @@ export class PageSession {
 
   clearSocket() {
     this.#ws = null;
+    this.#setTools([]);
     for (const [, pending] of this.#pending) {
       pending.reject(new Error("Page disconnected"));
     }
@@ -55,7 +61,7 @@ export class PageSession {
     }
 
     if (msg.type === "sync_tools") {
-      this.#tools = msg.tools;
+      this.#setTools(msg.tools);
       return;
     }
 
@@ -84,5 +90,11 @@ export class PageSession {
     return new Promise((resolve, reject) => {
       this.#pending.set(id, { resolve, reject });
     });
+  }
+
+  #setTools(tools: BridgeToolSummary[]): void {
+    if (JSON.stringify(this.#tools) === JSON.stringify(tools)) return;
+    this.#tools = tools;
+    this.#onToolsChanged?.();
   }
 }

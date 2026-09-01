@@ -114,7 +114,8 @@ Checkout tools stay unregistered for agents until a checkout journey is active.
 </experimental_WebMCPBridgeProvider>
 ```
 
-Run `webmcp-bridge` and pass the printed token.
+Configure Cursor to launch `webmcp-bridge` with a fixed
+`WEBMCP_BRIDGE_TOKEN`, then pass that same token to the page.
 
 ## License
 

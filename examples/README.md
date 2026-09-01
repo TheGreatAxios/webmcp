@@ -41,8 +41,7 @@ bun run dev
 | [`sync`](./sync) | 43111 | sync | `experimental_useWebMCPSync` |
 | [`journeys`](./journeys) | 43112 | journeys | Journey-scoped tool visibility |
 | [`confirm`](./confirm) | 43113 | confirm | Guarded tools + confirm dialog |
-
-Later stack PR adds `bridge`.
+| [`bridge`](./bridge) | 43114 | bridge | Bridge provider + Cursor MCP setup |
 
 ## Local tool exercise (no bridge)
 
