@@ -95,6 +95,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .wm-animate-in,
   .wm-animate-in-delay,
   .wm-animate-in-late,
