@@ -14,28 +14,29 @@ const CHECKOUT_TOOLS = ["get_cart", "place_order"] as const;
 
 function JourneysDemo() {
   const [phase, setPhase] = useState<Phase>("browse");
-  const [exposed, setExposed] = useState<string[]>([]);
+  const [exposed, setExposed] = useState<string[] | null>(null);
   const [lastNote, setLastNote] = useState<string | null>(null);
-  const { available } = useWebMCP();
+  const { available, native } = useWebMCP();
   const { activeJourneys, isToolExposed } = experimental_useWebMCPJourney();
 
   useEffect(() => {
-    if (!available || !navigator.modelContextTesting) return;
+    if (!available || !navigator.modelContextTesting) {
+      setExposed(null);
+      return;
+    }
     const refresh = () => {
       setExposed(navigator.modelContextTesting!.listTools().map((t) => t.name));
     };
     refresh();
     navigator.modelContextTesting.registerToolsChangedCallback(refresh);
-    const id = window.setInterval(refresh, 400);
-    return () => window.clearInterval(id);
-  }, [available, phase]);
+  }, [available]);
 
   return (
     <>
       <Journey
         name="browse"
         description="Discover products and add them to the cart"
-        tools={[...BROWSE_TOOLS]}
+        tools={BROWSE_TOOLS}
         when={phase === "browse"}
       >
         <WebMCPTool
@@ -74,7 +75,7 @@ function JourneysDemo() {
       <Journey
         name="checkout"
         description="Review cart and place an order"
-        tools={[...CHECKOUT_TOOLS]}
+        tools={CHECKOUT_TOOLS}
         when={phase === "checkout"}
       >
         <WebMCPTool
@@ -109,7 +110,13 @@ function JourneysDemo() {
               <span className="wm-chip" data-tone="accent">
                 journey · {activeJourneys[0] ?? "none"}
               </span>
-              <span className="wm-chip wm-mono">{exposed.length} tools</span>
+              <span className="wm-chip wm-mono">
+                {exposed
+                  ? `${exposed.length} tools`
+                  : native
+                    ? "inspection unavailable"
+                    : "inspecting tools"}
+              </span>
             </div>
           </header>
 
@@ -146,12 +153,21 @@ function JourneysDemo() {
             <section className="wm-section wm-animate-in-late">
               <h2>Exposed right now</h2>
               <p>
-                Listed via <span className="wm-mono">modelContextTesting.listTools()</span>.
+                {exposed ? (
+                  <>
+                    Listed via <span className="wm-mono">modelContextTesting.listTools()</span>.
+                  </>
+                ) : (
+                  <>
+                    Native tool inspection is unavailable; these states reflect the active journey
+                    registry.
+                  </>
+                )}
               </p>
               <div className="wm-panel wm-fade-in" key={phase}>
                 <ul className="wm-list">
                   {[...BROWSE_TOOLS, ...CHECKOUT_TOOLS].map((name) => {
-                    const on = exposed.includes(name) && isToolExposed(name);
+                    const on = exposed ? exposed.includes(name) : isToolExposed(name);
                     return (
                       <li key={name}>
                         <span className="wm-mono">{name}</span>
@@ -164,7 +180,12 @@ function JourneysDemo() {
                 </ul>
               </div>
               {lastNote ? (
-                <p className="wm-fade-in" style={{ marginTop: "1rem" }}>
+                <p
+                  className="wm-fade-in"
+                  style={{ marginTop: "1rem" }}
+                  role="status"
+                  aria-live="polite"
+                >
                   Last call: <strong>{lastNote}</strong>
                 </p>
               ) : (
@@ -175,8 +196,9 @@ function JourneysDemo() {
             </section>
 
             <section className="wm-section">
-              <h2>Try it locally</h2>
-              <pre className="wm-result">{`// While Browse is active:
+              <h2>{exposed ? "Try it locally" : "Native browser mode"}</h2>
+              {exposed ? (
+                <pre className="wm-result">{`// While Browse is active:
 await navigator.modelContextTesting.listTools()
 await navigator.modelContextTesting.executeTool(
   "search",
@@ -189,6 +211,12 @@ await navigator.modelContextTesting.executeTool(
   "place_order",
   JSON.stringify({}),
 )`}</pre>
+              ) : (
+                <p>
+                  Use a compatible agent or browser tool client to inspect and call the active
+                  journey’s tools.
+                </p>
+              )}
             </section>
           </main>
 

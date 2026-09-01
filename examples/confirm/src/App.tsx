@@ -17,68 +17,74 @@ const INITIAL: CartItem[] = [
 
 function ConfirmDialog({ lineCount }: { lineCount: number }) {
   const { pending } = experimental_useWebMCPConfirm();
-  const approveRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (pending) approveRef.current?.focus();
-  }, [pending]);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const keepRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!pending) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") pending.reject("declined");
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    if (dialog && !dialog.open) dialog.showModal();
+    keepRef.current?.focus();
+    return () => {
+      if (dialog?.open) dialog.close();
+      previousFocus?.focus();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
   }, [pending]);
 
   if (!pending) return null;
 
   return (
-    <div className="wm-dialog-backdrop" role="presentation">
-      <div
-        className="wm-dialog"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-title"
-        aria-describedby="confirm-desc"
-      >
-        <h2 id="confirm-title">Clear the cart?</h2>
-        <p id="confirm-desc">
-          An agent wants to run <span className="wm-mono">{pending.tool}</span>
-          {lineCount > 0 ? (
-            <>
-              {" "}
-              and remove <strong>{lineCount}</strong> line
-              {lineCount === 1 ? "" : "s"} from your cart.
-            </>
-          ) : (
-            <> on an already empty cart.</>
-          )}{" "}
-          This cannot be undone from the page.
-        </p>
-        <div className="wm-dialog-actions">
-          <button type="button" className="wm-btn wm-btn-ghost" onClick={() => pending.reject("declined")}>
-            Keep cart
-          </button>
-          <button
-            ref={approveRef}
-            type="button"
-            className="wm-btn wm-btn-danger"
-            onClick={() => pending.approve()}
-          >
-            Clear cart
-          </button>
-        </div>
+    <dialog
+      ref={dialogRef}
+      className="wm-dialog"
+      role="alertdialog"
+      aria-labelledby="confirm-title"
+      aria-describedby="confirm-desc"
+      onCancel={(event) => {
+        event.preventDefault();
+        pending.reject("declined");
+      }}
+    >
+      <h2 id="confirm-title">Clear the cart?</h2>
+      <p id="confirm-desc">
+        An agent wants to run <span className="wm-mono">{pending.tool}</span>
+        {lineCount > 0 ? (
+          <>
+            {" "}
+            and remove <strong>{lineCount}</strong> line
+            {lineCount === 1 ? "" : "s"} from your cart.
+          </>
+        ) : (
+          <> on an already empty cart.</>
+        )}{" "}
+        This cannot be undone from the page.
+      </p>
+      <div className="wm-dialog-actions">
+        <button
+          ref={keepRef}
+          type="button"
+          className="wm-btn wm-btn-ghost"
+          onClick={() => pending.reject("declined")}
+        >
+          Keep cart
+        </button>
+        <button
+          type="button"
+          className="wm-btn wm-btn-danger"
+          onClick={() => pending.approve()}
+        >
+          Clear cart
+        </button>
       </div>
-    </div>
+    </dialog>
   );
 }
 
 function ConfirmDemo() {
   const [items, setItems] = useState<CartItem[]>(INITIAL);
   const [status, setStatus] = useState<string | null>(null);
-  const { available } = useWebMCP();
+  const { available, native } = useWebMCP();
   const count = items.reduce((n, i) => n + i.qty, 0);
 
   return (
@@ -125,6 +131,7 @@ function ConfirmDemo() {
               <span
                 className={`wm-chip${available ? " wm-live-pulse" : ""}`}
                 data-tone={available ? "ok" : "warn"}
+                role="status"
               >
                 <span className="wm-dot" aria-hidden />
                 HITL ready
@@ -147,7 +154,13 @@ function ConfirmDemo() {
               </p>
               <div className="wm-cta-row">
                 {status ? (
-                  <span className="wm-chip wm-fade-in" data-tone="ok" key={status}>
+                  <span
+                    className="wm-chip wm-fade-in"
+                    data-tone="ok"
+                    key={status}
+                    role="status"
+                    aria-live="polite"
+                  >
                     {status}
                   </span>
                 ) : (
@@ -185,8 +198,13 @@ function ConfirmDemo() {
             </section>
 
             <section className="wm-section">
-              <h2>Try it locally</h2>
-              <pre className="wm-result">{`await navigator.modelContextTesting.executeTool(
+              <h2>{native ? "Native browser mode" : "Try it locally"}</h2>
+              {native ? (
+                <p>
+                  Use a compatible agent or browser tool client to call the guarded tools.
+                </p>
+              ) : (
+                <pre className="wm-result">{`await navigator.modelContextTesting.executeTool(
   "clear_cart",
   JSON.stringify({}),
 )
@@ -195,6 +213,7 @@ await navigator.modelContextTesting.executeTool(
   "add_demo_item",
   JSON.stringify({}),
 )`}</pre>
+              )}
             </section>
           </main>
 

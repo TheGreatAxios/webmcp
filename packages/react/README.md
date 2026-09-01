@@ -23,10 +23,18 @@ function App() {
   const cart = experimental_useWebMCPSync({
     initial: { items: [] as string[] },
     tools: {
-      add_to_cart: (cart, { sku }) => ({
-        ...cart,
-        items: [...cart.items, String(sku)],
-      }),
+      add_to_cart: {
+        description: "Add a SKU to the cart",
+        inputSchema: {
+          type: "object",
+          properties: { sku: { type: "string" } },
+          required: ["sku"],
+        },
+        reducer: (cart, { sku }) => ({
+          ...cart,
+          items: [...cart.items, String(sku)],
+        }),
+      },
     },
   });
 

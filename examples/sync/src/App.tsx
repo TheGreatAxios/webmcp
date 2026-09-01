@@ -4,16 +4,14 @@ import {
   experimental_useWebMCPSync,
   useWebMCP,
 } from "@thegreataxios/webmcp-react";
-
-type CartItem = { sku: string; name: string; qty: number; price: number };
-type Cart = { items: CartItem[] };
-
-const SKUS: Record<string, { name: string; price: number }> = {
-  "atlas-mug": { name: "Atlas Mug", price: 28 },
-  "harbor-tote": { name: "Harbor Tote", price: 64 },
-  "lumen-lamp": { name: "Lumen Desk Lamp", price: 120 },
-  "field-notebook": { name: "Field Notebook", price: 18 },
-};
+import {
+  MAX_QTY,
+  SKUS,
+  addToCart,
+  removeFromCart,
+  setQuantity,
+  type Cart,
+} from "./cart";
 
 function money(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -26,36 +24,52 @@ function SyncDemo() {
   const cart = experimental_useWebMCPSync<Cart>({
     initial: { items: [] },
     tools: {
-      add_to_cart: (state, args) => {
-        const sku = String(args.sku ?? "").toLowerCase();
-        const meta = SKUS[sku];
-        if (!meta) return state;
-        const qty = Math.max(1, Number(args.qty ?? 1) || 1);
-        const existing = state.items.find((i) => i.sku === sku);
-        if (existing) {
-          return {
-            items: state.items.map((i) =>
-              i.sku === sku ? { ...i, qty: i.qty + qty } : i,
-            ),
-          };
-        }
-        return {
-          items: [...state.items, { sku, name: meta.name, qty, price: meta.price }],
-        };
+      add_to_cart: {
+        title: "Add to cart",
+        description: `Add 1–${MAX_QTY} units of a known product to the cart.`,
+        inputSchema: {
+          type: "object",
+          properties: {
+            sku: { type: "string", enum: Object.keys(SKUS), description: "Product SKU" },
+            qty: {
+              type: "integer",
+              minimum: 1,
+              maximum: MAX_QTY,
+              default: 1,
+              description: `Units to add (maximum ${MAX_QTY} total per SKU)`,
+            },
+          },
+          required: ["sku"],
+          additionalProperties: false,
+        },
+        reducer: addToCart,
       },
-      remove_from_cart: (state, args) => {
-        const sku = String(args.sku ?? "").toLowerCase();
-        return { items: state.items.filter((i) => i.sku !== sku) };
+      remove_from_cart: {
+        title: "Remove from cart",
+        description: "Remove a product that is currently in the cart.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            sku: { type: "string", enum: Object.keys(SKUS), description: "Product SKU" },
+          },
+          required: ["sku"],
+          additionalProperties: false,
+        },
+        reducer: removeFromCart,
       },
-      set_quantity: (state, args) => {
-        const sku = String(args.sku ?? "").toLowerCase();
-        const qty = Math.max(0, Number(args.qty ?? 0) || 0);
-        if (qty === 0) {
-          return { items: state.items.filter((i) => i.sku !== sku) };
-        }
-        return {
-          items: state.items.map((i) => (i.sku === sku ? { ...i, qty } : i)),
-        };
+      set_quantity: {
+        title: "Set cart quantity",
+        description: `Set a cart item's quantity from 0 (remove) through ${MAX_QTY}.`,
+        inputSchema: {
+          type: "object",
+          properties: {
+            sku: { type: "string", enum: Object.keys(SKUS), description: "Product SKU" },
+            qty: { type: "integer", minimum: 0, maximum: MAX_QTY },
+          },
+          required: ["sku", "qty"],
+          additionalProperties: false,
+        },
+        reducer: setQuantity,
       },
     },
     onMutation: ({ tool, next }) => {
@@ -80,6 +94,7 @@ function SyncDemo() {
               <span
                 className={`wm-chip${available ? " wm-live-pulse" : ""}`}
                 data-tone={available ? "ok" : "warn"}
+                role="status"
               >
                 <span className="wm-dot" aria-hidden />
                 {available ? "sync live" : "starting"}
@@ -101,7 +116,13 @@ function SyncDemo() {
               </p>
               <div className="wm-cta-row">
                 {flash ? (
-                  <span className="wm-chip wm-fade-in" data-tone="ok" key={flash}>
+                  <span
+                    className="wm-chip wm-fade-in"
+                    data-tone="ok"
+                    key={flash}
+                    role="status"
+                    aria-live="polite"
+                  >
                     {flash}
                   </span>
                 ) : (

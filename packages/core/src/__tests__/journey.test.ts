@@ -23,5 +23,9 @@ describe("experimental_createJourneyRegistry", () => {
     registry.register({ name: "j", tools: ["a"] });
     registry.setJourneyActive("j", true);
     expect(n).toBe(2);
+    registry.setJourneyActive("j", true);
+    registry.setJourneyActive("missing", true);
+    registry.unregister("missing");
+    expect(n).toBe(2);
   });
 });

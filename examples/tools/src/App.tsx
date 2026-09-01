@@ -19,9 +19,13 @@ function StatusBar() {
   const { available, native, appName } = useWebMCP();
   return (
     <div className="wm-kicker">
-      <span className={`wm-chip${available ? " wm-live-pulse" : ""}`} data-tone={available ? "ok" : "warn"}>
+      <span
+        className={`wm-chip${available ? " wm-live-pulse" : ""}`}
+        data-tone={available ? "ok" : "warn"}
+        role="status"
+      >
         <span className="wm-dot" aria-hidden />
-        {available ? "modelContext ready" : "waiting for polyfill"}
+        {available ? "modelContext ready" : "modelContext unavailable"}
       </span>
       <span className="wm-chip" data-tone="accent">
         {native ? "native" : "polyfill"}
@@ -44,7 +48,13 @@ function ResultPanel({ last }: { last: ToolCallRecord | null }) {
   }
 
   return (
-    <div className="wm-panel wm-fade-in" key={last.at}>
+    <div
+      className="wm-panel wm-fade-in"
+      key={last.at}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <div className="wm-kicker" style={{ marginBottom: "0.85rem" }}>
         <span className="wm-chip" data-tone={last.ok ? "ok" : "danger"}>
           {last.ok ? "ok" : "error"}
@@ -62,7 +72,7 @@ function ResultPanel({ last }: { last: ToolCallRecord | null }) {
 
 function ToolsDemo() {
   const [last, setLast] = useState<ToolCallRecord | null>(null);
-  const [tools, setTools] = useState<string[]>([]);
+  const [tools, setTools] = useState<string[] | null>(null);
   const { available } = useWebMCP();
 
   const record = useCallback((entry: Omit<ToolCallRecord, "at">) => {
@@ -70,7 +80,10 @@ function ToolsDemo() {
   }, []);
 
   useEffect(() => {
-    if (!available || !navigator.modelContextTesting) return;
+    if (!available || !navigator.modelContextTesting) {
+      setTools(null);
+      return;
+    }
     const refresh = () => {
       const listed = navigator.modelContextTesting!.listTools().map((t) => t.name);
       setTools(listed);
@@ -187,7 +200,9 @@ function ToolsDemo() {
               </p>
               <div className="wm-cta-row">
                 <span className="wm-chip" data-tone="accent">
-                  {tools.length} tool{tools.length === 1 ? "" : "s"} exposed
+                  {tools
+                    ? `${tools.length} tool${tools.length === 1 ? "" : "s"} exposed`
+                    : "Tool inspection unavailable"}
                 </span>
                 <span className="wm-muted wm-mono">localhost:43110</span>
               </div>
@@ -200,11 +215,11 @@ function ToolsDemo() {
             </section>
 
             <section className="wm-section">
-              <h2>Try it locally</h2>
-              <p>
-                Polyfill is already installed by the provider. In DevTools:
-              </p>
-              <pre className="wm-result">{`await navigator.modelContextTesting.listTools()
+              <h2>{tools ? "Try it locally" : "Native browser mode"}</h2>
+              {tools ? (
+                <>
+                  <p>Polyfill testing tools are available in DevTools:</p>
+                  <pre className="wm-result">{`await navigator.modelContextTesting.listTools()
 await navigator.modelContextTesting.executeTool(
   "search",
   JSON.stringify({ q: "mug" }),
@@ -213,6 +228,14 @@ await navigator.modelContextTesting.executeTool(
   "get_product",
   JSON.stringify({ id: "harbor-tote" }),
 )`}</pre>
+                </>
+              ) : (
+                <p>
+                  This browser provides <span className="wm-mono">document.modelContext</span>{" "}
+                  natively, without the polyfill-only inspection API. Exercise the registered
+                  tools from a compatible agent or browser tool client.
+                </p>
+              )}
             </section>
           </main>
 

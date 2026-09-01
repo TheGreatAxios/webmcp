@@ -17,6 +17,7 @@ Opens on **http://localhost:43113**.
 
 - `experimental_WebMCPConfirmProvider` + `experimental_WebMCPGuardedTool`
 - Destructive `clear_cart` requires approve / decline (Esc declines)
+- Overlapping guarded calls queue for one-at-a-time confirmation
 - Unguarded `add_demo_item` for restocking after a clear
 
 ## Exercise tools
@@ -29,3 +30,5 @@ await navigator.modelContextTesting.executeTool(
 ```
 
 Approve or decline in the dialog, then watch the cart update.
+The console helper is polyfill-only; native WebMCP browsers should call the
+guarded tool through a compatible agent or browser tool client.
