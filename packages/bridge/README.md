@@ -6,30 +6,38 @@ Local stdio MCP server that proxies tool calls to a browser tab over **localhost
 
 ```bash
 bun add -g @thegreataxios/webmcp-bridge
-# or use npx webmcp-bridge
+openssl rand -hex 32
 ```
+
+The installed CLI runs on Bun and requires a fixed
+`WEBMCP_BRIDGE_TOKEN` of at least 32 characters.
 
 ## Cursor
 
-`.cursor/mcp.json`:
+Add a user-level MCP server so the token is not committed in a repository:
 
 ```json
 {
   "mcpServers": {
     "webmcp": {
-      "command": "webmcp-bridge"
+      "command": "webmcp-bridge",
+      "env": {
+        "WEBMCP_BRIDGE_TOKEN": "<paste the generated token>"
+      }
     }
   }
 }
 ```
 
-On start, the bridge prints:
+Cursor launches the single bridge process. Paste that same token into the page.
+On start, the bridge reports only its local endpoint:
 
 ```
-[webmcp-bridge] ws://127.0.0.1:17321/ws token=<hex>
+[webmcp-bridge] listening on ws://127.0.0.1:17321/ws
 ```
 
-Pass that token to your app via `experimental_WebMCPBridgeProvider` (React) or `createPageBridgeClient` (core).
+Pass the configured token to your app via `experimental_WebMCPBridgeProvider`
+(React) or `createPageBridgeClient` (core).
 
 ## Security
 
@@ -42,7 +50,7 @@ Pass that token to your app via `experimental_WebMCPBridgeProvider` (React) or `
 Env:
 
 - `WEBMCP_BRIDGE_PORT` — default `17321`
-- `WEBMCP_BRIDGE_TOKEN` — optional fixed token
+- `WEBMCP_BRIDGE_TOKEN` — required by the CLI; at least 32 characters
 - `WEBMCP_BRIDGE_HOST` — must stay localhost
 
 **Not for remote exposure.** Same threat model as local MCP + extension bridges.

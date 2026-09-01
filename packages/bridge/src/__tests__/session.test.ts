@@ -4,7 +4,8 @@ import { PageSession } from "../session";
 
 describe("PageSession", () => {
   test("stores tools after sync", () => {
-    const session = new PageSession();
+    let changes = 0;
+    const session = new PageSession(() => changes++);
     const ws = createMockWs();
     session.setSocket(ws as unknown as ServerWebSocket<{ authenticated: boolean }>);
 
@@ -22,6 +23,20 @@ describe("PageSession", () => {
 
     expect(session.getTools()).toHaveLength(1);
     expect(session.isConnected()).toBe(true);
+    expect(changes).toBe(1);
+
+    session.handleMessage(
+      JSON.stringify({
+        type: "sync_tools",
+        tools: [{ name: "ping", description: "Ping" }],
+      }),
+      "secret",
+    );
+    expect(changes).toBe(1);
+
+    session.clearSocket();
+    expect(session.getTools()).toEqual([]);
+    expect(changes).toBe(2);
   });
 
   test("rejects invalid auth token", () => {

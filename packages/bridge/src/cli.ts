@@ -1,9 +1,17 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { createMcpBridge } from "./mcp-server";
+import { resolveBridgeOptions } from "./security";
 
 async function main() {
-  const bridge = await createMcpBridge();
-  console.error(`[webmcp-bridge] ws://127.0.0.1:${bridge.port}/ws token=${bridge.token}`);
+  const options = resolveBridgeOptions();
+  const token = options.token?.trim();
+  if (!token || token.length < 32) {
+    throw new Error(
+      "WEBMCP_BRIDGE_TOKEN is required and must contain at least 32 characters",
+    );
+  }
+  const bridge = await createMcpBridge({ ...options, token });
+  console.error(`[webmcp-bridge] listening on ws://${bridge.host}:${bridge.port}/ws`);
   await bridge.connectStdio();
 }
 

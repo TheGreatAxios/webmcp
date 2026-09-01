@@ -16,27 +16,33 @@ Opens on **http://localhost:43114**.
 ## What it demos
 
 - `experimental_WebMCPBridgeProvider` + live connection status
-- Token entry (or `?token=` query / localStorage)
+- Token entry persisted in localStorage
 - Clear Cursor MCP setup copy
 - Sample tools: `ping`, `echo`
 
 ## Cursor setup
 
-1. `bun add -g @thegreataxios/webmcp-bridge` then run `webmcp-bridge`
-2. Add to `.cursor/mcp.json`:
+1. Install the Bun CLI: `bun add -g @thegreataxios/webmcp-bridge`
+2. Generate a token: `openssl rand -hex 32`
+3. Add a user-level Cursor MCP server (do not commit the token):
 
 ```json
 {
   "mcpServers": {
     "webmcp": {
-      "command": "webmcp-bridge"
+      "command": "webmcp-bridge",
+      "env": {
+        "WEBMCP_BRIDGE_TOKEN": "<paste the generated token>"
+      }
     }
   }
 }
 ```
 
-3. Paste the printed token into the page (or open `http://localhost:43114/?token=…`)
-4. Ask Cursor to call `ping`
+4. Restart that MCP server and paste the same token into the page
+5. Ask Cursor to call `ping`
+
+Cursor launches the only bridge process. The CLI never prints the token.
 
 ## Local without bridge
 

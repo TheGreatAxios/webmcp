@@ -12,8 +12,20 @@ const DEFAULT_URL = "ws://127.0.0.1:17321/ws";
 
 function readInitialToken(): string {
   if (typeof window === "undefined") return "";
-  const fromQuery = new URLSearchParams(window.location.search).get("token");
-  if (fromQuery) return fromQuery.trim();
+  const url = new URL(window.location.href);
+  const fromQuery = url.searchParams.get("token")?.trim();
+  if (url.searchParams.has("token")) {
+    url.searchParams.delete("token");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }
+  if (fromQuery) {
+    localStorage.setItem(TOKEN_KEY, fromQuery);
+    return fromQuery;
+  }
   return localStorage.getItem(TOKEN_KEY) ?? "";
 }
 
@@ -26,15 +38,19 @@ function statusTone(status: string): "ok" | "warn" | "danger" | "accent" {
 
 function BridgeStatus() {
   const status = experimental_useWebMCPBridgeStatus();
-  const { available } = useWebMCP();
+  const { available, native } = useWebMCP();
   return (
     <div className="wm-kicker">
-      <span className={`wm-chip${status === "connected" ? " wm-live-pulse" : ""}`} data-tone={statusTone(status)}>
+      <span
+        className={`wm-chip${status === "connected" ? " wm-live-pulse" : ""}`}
+        data-tone={statusTone(status)}
+        role="status"
+      >
         <span className="wm-dot" aria-hidden />
         bridge · {status}
       </span>
-      <span className="wm-chip" data-tone={available ? "ok" : "warn"}>
-        modelContext {available ? "on" : "off"}
+      <span className="wm-chip" data-tone={available && !native ? "ok" : "warn"}>
+        {native ? "native inspection unavailable" : `modelContext ${available ? "on" : "off"}`}
       </span>
     </div>
   );
@@ -43,6 +59,7 @@ function BridgeStatus() {
 function BridgeInner({ onClearToken }: { onClearToken: () => void }) {
   const status = experimental_useWebMCPBridgeStatus();
   const [last, setLast] = useState<string | null>(null);
+  const { native } = useWebMCP();
 
   return (
     <>
@@ -84,9 +101,9 @@ function BridgeInner({ onClearToken }: { onClearToken: () => void }) {
               <p className="wm-eyebrow">Bridge</p>
               <h1>Cursor talks to this tab.</h1>
               <p className="wm-lede">
-                Run <span className="wm-mono">webmcp-bridge</span>, paste the
-                token, and Cursor’s MCP client can call page tools over a
-                localhost WebSocket — no Chrome extension.
+                Give Cursor and this page the same bridge token, and Cursor’s
+                MCP client can call page tools over a localhost WebSocket — no
+                Chrome extension.
               </p>
               <div className="wm-cta-row">
                 <span className="wm-chip" data-tone={statusTone(status)}>
@@ -101,29 +118,34 @@ function BridgeInner({ onClearToken }: { onClearToken: () => void }) {
 
             <section className="wm-section wm-animate-in-late">
               <h2>Cursor setup</h2>
-              <p>Add the bridge as an MCP server, then pass the printed token into this page.</p>
+              <p>
+                Generate one token, configure Cursor to launch the bridge with
+                it, then paste the same token into this page.
+              </p>
               <div className="wm-panel">
                 <p style={{ marginTop: 0 }}>
-                  <strong>1.</strong> Install and run
+                  <strong>1.</strong> Install and generate a token
                 </p>
                 <pre className="wm-result">{`bun add -g @thegreataxios/webmcp-bridge
-webmcp-bridge
-# prints: ws://127.0.0.1:17321/ws token=<hex>`}</pre>
+openssl rand -hex 32
+# copy the output; do not commit it`}</pre>
                 <p>
-                  <strong>2.</strong> Cursor MCP config —{" "}
-                  <span className="wm-mono">.cursor/mcp.json</span>
+                  <strong>2.</strong> Add a user-level Cursor MCP server (keep
+                  the token out of repository files)
                 </p>
                 <pre className="wm-result">{`{
   "mcpServers": {
     "webmcp": {
-      "command": "webmcp-bridge"
+      "command": "webmcp-bridge",
+      "env": {
+        "WEBMCP_BRIDGE_TOKEN": "<paste the generated token>"
+      }
     }
   }
 }`}</pre>
                 <p style={{ marginBottom: 0 }}>
-                  <strong>3.</strong> Paste the token above (or open{" "}
-                  <span className="wm-mono">?token=…</span>). Status should move to{" "}
-                  <span className="wm-mono">connected</span>. Ask Cursor to call{" "}
+                  <strong>3.</strong> Restart the MCP server, paste that same
+                  token above, and ask Cursor to call{" "}
                   <span className="wm-mono">ping</span>.
                 </p>
               </div>
@@ -133,7 +155,13 @@ webmcp-bridge
               <h2>Last bridge tool call</h2>
               <div className="wm-panel">
                 {last ? (
-                  <p className="wm-fade-in" style={{ margin: 0 }} key={last}>
+                  <p
+                    className="wm-fade-in"
+                    style={{ margin: 0 }}
+                    key={last}
+                    role="status"
+                    aria-live="polite"
+                  >
                     {last}
                   </p>
                 ) : (
@@ -143,13 +171,22 @@ webmcp-bridge
                   </p>
                 )}
               </div>
-              <p style={{ marginTop: "1rem" }} className="wm-muted">
-                Without the bridge, you can still exercise tools locally:
-              </p>
-              <pre className="wm-result">{`await navigator.modelContextTesting.executeTool(
+              {native ? (
+                <p style={{ marginTop: "1rem" }} className="wm-muted">
+                  This bridge depends on the polyfill-only testing API. Native
+                  WebMCP inspection is unavailable in this demo.
+                </p>
+              ) : (
+                <>
+                  <p style={{ marginTop: "1rem" }} className="wm-muted">
+                    Without the bridge, you can still exercise tools locally:
+                  </p>
+                  <pre className="wm-result">{`await navigator.modelContextTesting.executeTool(
   "ping",
   JSON.stringify({}),
 )`}</pre>
+                </>
+              )}
             </section>
           </main>
 
@@ -193,18 +230,29 @@ function TokenGate({
             <p className="wm-eyebrow">Bridge</p>
             <h1>Connect this page to the bridge.</h1>
             <p className="wm-lede">
-              Start <span className="wm-mono">webmcp-bridge</span> and paste the
-              hex token it prints. Nothing leaves localhost.
+              Paste the token from your user-level Cursor MCP configuration.
+              Cursor launches the bridge; nothing leaves localhost.
             </p>
           </section>
           <section className="wm-section wm-animate-in-late">
             <form className="wm-panel" onSubmit={submit}>
+              <p style={{ marginTop: 0 }}>
+                Install with{" "}
+                <span className="wm-mono">
+                  bun add -g @thegreataxios/webmcp-bridge
+                </span>
+                , generate a token with{" "}
+                <span className="wm-mono">openssl rand -hex 32</span>, and set
+                it as <span className="wm-mono">WEBMCP_BRIDGE_TOKEN</span> in
+                your user-level Cursor MCP server configuration.
+              </p>
               <label htmlFor="token" style={{ display: "block", fontWeight: 600, marginBottom: "0.5rem" }}>
-                Bridge token
+                Same bridge token
               </label>
               <input
                 id="token"
                 name="token"
+                type="password"
                 className="wm-mono"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
