@@ -322,4 +322,146 @@ describe("experimental_WebMCPConfirm", () => {
     const raw = await execPromise;
     expect(JSON.parse(raw!)).toMatchObject({ content: [{ text: "deleted" }] });
   });
+
+  test("queues overlapping calls and settles each resolver", async () => {
+    function Harness() {
+      const { pending } = experimental_useWebMCPConfirm();
+      return (
+        <>
+          <GuardedTool
+            name="queued_delete"
+            description="Delete in order"
+            handler={async ({ id }) => ({
+              content: [{ type: "text", text: `deleted ${id}` }],
+            })}
+          />
+          {pending ? (
+            <>
+              <span data-testid="pending-id">{String(pending.args.id)}</span>
+              <button type="button" data-testid="queue-approve" onClick={pending.approve}>
+                Approve
+              </button>
+              <button type="button" data-testid="queue-reject" onClick={() => pending.reject()}>
+                Reject
+              </button>
+            </>
+          ) : null}
+        </>
+      );
+    }
+
+    render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <ConfirmProvider>
+          <Harness />
+        </ConfirmProvider>
+      </WebMCPProvider>,
+    );
+    await waitFor(() =>
+      expect(
+        navigator.modelContextTesting?.listTools().some((tool) => tool.name === "queued_delete"),
+      ).toBe(true),
+    );
+
+    let first!: Promise<string | null>;
+    let second!: Promise<string | null>;
+    act(() => {
+      first = navigator.modelContextTesting!.executeTool(
+        "queued_delete",
+        JSON.stringify({ id: "first" }),
+      );
+      second = navigator.modelContextTesting!.executeTool(
+        "queued_delete",
+        JSON.stringify({ id: "second" }),
+      );
+    });
+    await waitFor(() =>
+      expect(document.querySelector("[data-testid='pending-id']")?.textContent).toBe("first"),
+    );
+    await act(async () => {
+      (document.querySelector("[data-testid='queue-approve']") as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await waitFor(() =>
+      expect(document.querySelector("[data-testid='pending-id']")?.textContent).toBe("second"),
+    );
+    await act(async () => {
+      (document.querySelector("[data-testid='queue-reject']") as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+
+    expect(JSON.parse((await first)!)).toMatchObject({
+      content: [{ text: "deleted first" }],
+    });
+    expect(JSON.parse((await second)!)).toMatchObject({
+      content: [{ text: "User declined" }],
+      isError: true,
+    });
+  });
+
+  test("rejects pending calls when the provider unmounts", async () => {
+    function Harness() {
+      return (
+        <GuardedTool
+          name="unmount_delete"
+          description="Delete after confirmation"
+          handler={async () => ({ content: [{ type: "text", text: "deleted" }] })}
+        />
+      );
+    }
+
+    const view = render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <ConfirmProvider>
+          <Harness />
+        </ConfirmProvider>
+      </WebMCPProvider>,
+    );
+    await waitFor(() =>
+      expect(
+        navigator.modelContextTesting?.listTools().some((tool) => tool.name === "unmount_delete"),
+      ).toBe(true),
+    );
+
+    let result!: Promise<string | null>;
+    act(() => {
+      result = navigator.modelContextTesting!.executeTool("unmount_delete", "{}");
+    });
+    act(() => view.unmount());
+
+    expect(JSON.parse((await result)!)).toMatchObject({
+      content: [{ text: "User declined" }],
+      isError: true,
+    });
+  });
+
+  test("fails closed without a confirmation provider", async () => {
+    let executed = false;
+    render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <GuardedTool
+          name="unprovided_delete"
+          description="Never run without confirmation"
+          handler={async () => {
+            executed = true;
+            return { content: [{ type: "text", text: "deleted" }] };
+          }}
+        />
+      </WebMCPProvider>,
+    );
+    await waitFor(() =>
+      expect(
+        navigator.modelContextTesting
+          ?.listTools()
+          .some((tool) => tool.name === "unprovided_delete"),
+      ).toBe(true),
+    );
+
+    const raw = await navigator.modelContextTesting!.executeTool("unprovided_delete", "{}");
+    expect(JSON.parse(raw!)).toMatchObject({
+      content: [{ text: "Confirmation provider unavailable" }],
+      isError: true,
+    });
+    expect(executed).toBe(false);
+  });
 });

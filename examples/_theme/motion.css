@@ -69,7 +69,7 @@
   animation: wm-fade-in 280ms ease both;
 }
 
-.wm-dialog-backdrop {
+.wm-dialog::backdrop {
   animation: wm-fade-in 180ms ease both;
 }
 
@@ -103,7 +103,7 @@
   .wm-animate-in-delay,
   .wm-animate-in-late,
   .wm-fade-in,
-  .wm-dialog-backdrop,
+  .wm-dialog::backdrop,
   .wm-dialog,
   .wm-live-pulse .wm-dot,
   .wm-skeleton {
