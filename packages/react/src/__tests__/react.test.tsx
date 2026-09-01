@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { act, render, waitFor } from "@testing-library/react";
+import { useReducer, useState } from "react";
 import {
   WebMCPProvider,
   WebMCPTool,
@@ -63,6 +64,36 @@ function ConcurrentSyncDemo() {
         Set count
       </button>
       <span data-testid="sync-count">{counter.state.count}</span>
+    </>
+  );
+}
+
+function JourneyStabilityDemo() {
+  const [phase, setPhase] = useState<"a" | "b">("a");
+  const [, rerender] = useReducer((value) => value + 1, 0);
+
+  return (
+    <>
+      <button type="button" data-testid="journey-rerender" onClick={rerender}>
+        Rerender
+      </button>
+      <button type="button" data-testid="journey-switch" onClick={() => setPhase("b")}>
+        Switch
+      </button>
+      <Journey name="phase-a" tools={["phase_a"]} when={phase === "a"}>
+        <WebMCPTool
+          name="phase_a"
+          description="Phase A"
+          handler={async () => ({ content: [{ type: "text", text: "a" }] })}
+        />
+      </Journey>
+      <Journey name="phase-b" tools={["phase_b"]} when={phase === "b"}>
+        <WebMCPTool
+          name="phase_b"
+          description="Phase B"
+          handler={async () => ({ content: [{ type: "text", text: "b" }] })}
+        />
+      </Journey>
     </>
   );
 }
@@ -202,6 +233,39 @@ describe("experimental_WebMCPJourney", () => {
     const names = navigator.modelContextTesting!.listTools().map((t) => t.name);
     expect(names).toContain("allowed");
     expect(names).not.toContain("hidden");
+  });
+
+  test("ignores fresh equivalent tool arrays and switches phases without churn", async () => {
+    render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <JourneyStabilityDemo />
+      </WebMCPProvider>,
+    );
+
+    await waitFor(() =>
+      expect(navigator.modelContextTesting?.listTools().map((tool) => tool.name)).toEqual([
+        "phase_a",
+      ]),
+    );
+
+    let changes = 0;
+    navigator.modelContextTesting!.registerToolsChangedCallback(() => changes++);
+    act(() => {
+      (document.querySelector("[data-testid='journey-rerender']") as HTMLButtonElement).click();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(changes).toBe(0);
+
+    act(() => {
+      (document.querySelector("[data-testid='journey-switch']") as HTMLButtonElement).click();
+    });
+    await waitFor(() =>
+      expect(navigator.modelContextTesting?.listTools().map((tool) => tool.name)).toEqual([
+        "phase_b",
+      ]),
+    );
+    expect(changes).toBeGreaterThan(0);
+    expect(changes).toBeLessThanOrEqual(4);
   });
 });
 
