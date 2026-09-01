@@ -29,3 +29,7 @@ Opens on **http://localhost:43112**.
 ```js
 await navigator.modelContextTesting.listTools();
 ```
+
+`navigator.modelContextTesting` is a polyfill-only inspection API. In a browser
+with native WebMCP, the page shows journey-registry state instead; exercise tools
+through a compatible agent or browser tool client.

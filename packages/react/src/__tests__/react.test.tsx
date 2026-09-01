@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { act, render, waitFor } from "@testing-library/react";
+import { useReducer, useState } from "react";
 import {
   WebMCPProvider,
   WebMCPTool,
@@ -19,10 +20,18 @@ function SyncDemo() {
   const cart = experimental_useWebMCPSync({
     initial: { items: [] as string[] },
     tools: {
-      add_item: (state, { sku }) => ({
-        ...state,
-        items: [...state.items, String(sku)],
-      }),
+      add_item: {
+        description: "Add an item by SKU",
+        inputSchema: {
+          type: "object",
+          properties: { sku: { type: "string" } },
+          required: ["sku"],
+        },
+        reducer: (state, { sku }) => ({
+          ...state,
+          items: [...state.items, String(sku)],
+        }),
+      },
     },
   });
 
@@ -30,6 +39,61 @@ function SyncDemo() {
     <>
       {cart.Tools}
       <span data-testid="count">{cart.state.items.length}</span>
+    </>
+  );
+}
+
+function ConcurrentSyncDemo() {
+  const counter = experimental_useWebMCPSync({
+    initial: { count: 0 },
+    tools: {
+      increment: async (state, { delay }) => {
+        if (delay) await new Promise((resolve) => setTimeout(resolve, 10));
+        return { count: state.count + 1 };
+      },
+      reject_mutation: () => {
+        throw new Error("Invalid mutation");
+      },
+    },
+  });
+
+  return (
+    <>
+      {counter.Tools}
+      <button type="button" data-testid="set-count" onClick={() => counter.setState({ count: 5 })}>
+        Set count
+      </button>
+      <span data-testid="sync-count">{counter.state.count}</span>
+    </>
+  );
+}
+
+function JourneyStabilityDemo() {
+  const [phase, setPhase] = useState<"a" | "b">("a");
+  const [, rerender] = useReducer((value) => value + 1, 0);
+
+  return (
+    <>
+      <button type="button" data-testid="journey-rerender" onClick={rerender}>
+        Rerender
+      </button>
+      <button type="button" data-testid="journey-switch" onClick={() => setPhase("b")}>
+        Switch
+      </button>
+      <Journey name="phase-a" tools={["phase_a"]} when={phase === "a"}>
+        <WebMCPTool
+          name="phase_a"
+          description="Phase A"
+          handler={async () => ({ content: [{ type: "text", text: "a" }] })}
+        />
+      </Journey>
+      <Journey name="phase-b" tools={["phase_b"]} when={phase === "b"}>
+        <WebMCPTool
+          name="phase_b"
+          description="Phase B"
+          handler={async () => ({ content: [{ type: "text", text: "b" }] })}
+        />
+      </Journey>
     </>
   );
 }
@@ -88,14 +152,61 @@ describe("experimental_useWebMCPSync", () => {
 
     await waitFor(() => expect(navigator.modelContextTesting?.listTools().length).toBeGreaterThan(0));
 
-    await navigator.modelContextTesting!.executeTool(
-      "add_item",
-      JSON.stringify({ sku: "sku-1" }),
-    );
+    await act(async () => {
+      await navigator.modelContextTesting!.executeTool(
+        "add_item",
+        JSON.stringify({ sku: "sku-1" }),
+      );
+    });
 
     await waitFor(() => {
       expect(document.querySelector("[data-testid='count']")?.textContent).toBe("1");
     });
+
+    const tool = navigator.modelContextTesting!.listTools().find((item) => item.name === "add_item");
+    expect(tool?.description).toBe("Add an item by SKU");
+    expect(JSON.parse(tool!.inputSchema!)).toMatchObject({
+      properties: { sku: { type: "string" } },
+    });
+  });
+
+  test("serializes overlapping mutations and reads direct state updates", async () => {
+    render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <ConcurrentSyncDemo />
+      </WebMCPProvider>,
+    );
+
+    await waitFor(() =>
+      expect(
+        navigator.modelContextTesting?.listTools().some((tool) => tool.name === "increment"),
+      ).toBe(true),
+    );
+
+    const first = navigator.modelContextTesting!.executeTool(
+      "increment",
+      JSON.stringify({ delay: true }),
+    );
+    const second = navigator.modelContextTesting!.executeTool("increment", "{}");
+    await act(async () => {
+      await Promise.all([first, second]);
+    });
+    expect(document.querySelector("[data-testid='sync-count']")?.textContent).toBe("2");
+
+    act(() => {
+      (document.querySelector("[data-testid='set-count']") as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      await navigator.modelContextTesting!.executeTool("increment", "{}");
+    });
+    expect(document.querySelector("[data-testid='sync-count']")?.textContent).toBe("6");
+
+    const rejected = await navigator.modelContextTesting!.executeTool("reject_mutation", "{}");
+    expect(JSON.parse(rejected!)).toMatchObject({
+      content: [{ text: "Invalid mutation" }],
+      isError: true,
+    });
+    expect(document.querySelector("[data-testid='sync-count']")?.textContent).toBe("6");
   });
 });
 
@@ -122,6 +233,39 @@ describe("experimental_WebMCPJourney", () => {
     const names = navigator.modelContextTesting!.listTools().map((t) => t.name);
     expect(names).toContain("allowed");
     expect(names).not.toContain("hidden");
+  });
+
+  test("ignores fresh equivalent tool arrays and switches phases without churn", async () => {
+    render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <JourneyStabilityDemo />
+      </WebMCPProvider>,
+    );
+
+    await waitFor(() =>
+      expect(navigator.modelContextTesting?.listTools().map((tool) => tool.name)).toEqual([
+        "phase_a",
+      ]),
+    );
+
+    let changes = 0;
+    navigator.modelContextTesting!.registerToolsChangedCallback(() => changes++);
+    act(() => {
+      (document.querySelector("[data-testid='journey-rerender']") as HTMLButtonElement).click();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(changes).toBe(0);
+
+    act(() => {
+      (document.querySelector("[data-testid='journey-switch']") as HTMLButtonElement).click();
+    });
+    await waitFor(() =>
+      expect(navigator.modelContextTesting?.listTools().map((tool) => tool.name)).toEqual([
+        "phase_b",
+      ]),
+    );
+    expect(changes).toBeGreaterThan(0);
+    expect(changes).toBeLessThanOrEqual(4);
   });
 });
 
