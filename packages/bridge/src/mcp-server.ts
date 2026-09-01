@@ -18,7 +18,15 @@ export interface McpBridgeOptions extends BridgeServerOptions {
 }
 
 export async function createMcpBridge(options: McpBridgeOptions = {}) {
-  const session = new PageSession();
+  const mcp = new Server(
+    { name: options.appName ?? "webmcp-bridge", version: options.appVersion ?? "0.1.0" },
+    { capabilities: { tools: { listChanged: true } } },
+  );
+  const session = new PageSession(() => {
+    void mcp.sendToolListChanged().catch(() => {
+      // The page may connect before an MCP client initializes.
+    });
+  });
   const wsOpts = resolveBridgeOptions();
 
   const { server, token, host, port } = await createBridgeWebSocketServer({
@@ -31,11 +39,6 @@ export async function createMcpBridge(options: McpBridgeOptions = {}) {
     onClose: () => session.clearSocket(),
     onMessage: (raw) => session.handleMessage(raw, token),
   });
-
-  const mcp = new Server(
-    { name: options.appName ?? "webmcp-bridge", version: options.appVersion ?? "0.1.0" },
-    { capabilities: { tools: {} } },
-  );
 
   mcp.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: session.getTools().map((tool) => ({
