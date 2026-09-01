@@ -24,7 +24,7 @@ export function App() {
               branches.
             </p>
             <div className="wm-cta-row">
-              <span className="wm-btn wm-btn-primary" aria-hidden="true">
+              <span className="wm-chip" data-tone="ok" role="status">
                 Theme ready
               </span>
               <span className="wm-muted wm-mono">localhost:43109</span>
