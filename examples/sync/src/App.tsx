@@ -18,7 +18,7 @@ function money(n: number) {
 }
 
 function SyncDemo() {
-  const { available } = useWebMCP();
+  const { available, native } = useWebMCP();
   const [flash, setFlash] = useState<string | null>(null);
 
   const cart = experimental_useWebMCPSync<Cart>({
@@ -178,8 +178,14 @@ function SyncDemo() {
             </section>
 
             <section className="wm-section">
-              <h2>Try it locally</h2>
-              <pre className="wm-result">{`await navigator.modelContextTesting.executeTool(
+              <h2>{native ? "Native browser mode" : "Try it locally"}</h2>
+              {native ? (
+                <p>
+                  Use a compatible agent or browser tool client to call the
+                  state-synced tools.
+                </p>
+              ) : (
+                <pre className="wm-result">{`await navigator.modelContextTesting.executeTool(
   "add_to_cart",
   JSON.stringify({ sku: "atlas-mug", qty: 2 }),
 )
@@ -195,6 +201,7 @@ await navigator.modelContextTesting.executeTool(
   "remove_from_cart",
   JSON.stringify({ sku: "harbor-tote" }),
 )`}</pre>
+              )}
             </section>
           </main>
 
