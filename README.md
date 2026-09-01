@@ -28,6 +28,24 @@ import { WebMCPProvider } from "@thegreataxios/webmcp/react";
 import { createMcpBridge } from "@thegreataxios/webmcp/bridge";
 ```
 
+## Examples
+
+Standalone Vite + React demos live in [`examples/`](./examples). They share a uniform theme (`examples/_theme`) and depend on the workspace packages.
+
+| Example | Port | Demo |
+|---------|------|------|
+| [`examples/shell`](./examples/shell) | 43109 | Themed foundation shell |
+
+More demos (`tools`, `sync`, `journeys`, `confirm`, `bridge`) land on stacked follow-up branches.
+
+```bash
+bun install
+bun run build
+cd examples/shell && bun run dev
+```
+
+See [examples/README.md](./examples/README.md) for conventions and how to exercise tools locally.
+
 ## Development
 
 ```bash
