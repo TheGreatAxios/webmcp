@@ -12,7 +12,8 @@
     "build:examples": "bun run --filter '@thegreataxios/webmcp-example-*' build",
     "test": "bun run --filter '@thegreataxios/webmcp-core' test && bun run --filter '@thegreataxios/webmcp-bridge' test && bun run --filter '@thegreataxios/webmcp-react' test && bun run --filter '@thegreataxios/webmcp' test",
     "typecheck": "bun run --filter '@thegreataxios/*' typecheck",
-    "clean": "rm -rf packages/*/dist"
+    "clean": "rm -rf packages/*/dist",
+    "release": "bun scripts/release.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
