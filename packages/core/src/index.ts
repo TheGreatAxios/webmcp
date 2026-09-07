@@ -38,10 +38,7 @@ export {
   WebMCPProviderElement,
 } from "./elements";
 
-export {
-  experimental_createJourneyRegistry,
-  experimental_defineJourney,
-} from "./experimental/journey";
+export { experimental_createJourneyRegistry } from "./experimental/journey";
 
 export {
   assertToolName,

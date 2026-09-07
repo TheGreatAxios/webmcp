@@ -32,12 +32,10 @@ export interface WebMCPContextValue {
   journeyRegistry: JourneyRegistry;
 }
 
-const defaultJourneyRegistry = experimental_createJourneyRegistry();
-
 const WebMCPContext = createContext<WebMCPContextValue>({
   available: false,
   native: false,
-  journeyRegistry: defaultJourneyRegistry,
+  journeyRegistry: experimental_createJourneyRegistry(),
 });
 
 export interface WebMCPProviderProps {
@@ -52,8 +50,10 @@ export function WebMCPProvider({ name, version, children }: WebMCPProviderProps)
 
   useLayoutEffect(() => {
     registerWebMCPElements();
-    installPolyfill();
+    // Registry first: createModelContext subscribes to it at install time,
+    // so journey switches also emit toolchange (the bridge syncs on it).
     setJourneyRegistry(journeyRegistry);
+    installPolyfill();
     setAvailable(typeof document !== "undefined" && document.modelContext != null);
   }, [journeyRegistry]);
 

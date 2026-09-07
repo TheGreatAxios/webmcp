@@ -120,6 +120,18 @@
         "vite": "^6.3.5",
       },
     },
+    "examples/vanilla": {
+      "name": "@thegreataxios/webmcp-example-vanilla",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thegreataxios/webmcp-core": "workspace:*",
+        "@thegreataxios/webmcp-examples-theme": "workspace:*",
+      },
+      "devDependencies": {
+        "typescript": "^5.9.3",
+        "vite": "^6.3.5",
+      },
+    },
     "packages/bridge": {
       "name": "@thegreataxios/webmcp-bridge",
       "version": "0.1.0",
@@ -349,6 +361,8 @@
     "@thegreataxios/webmcp-example-sync": ["@thegreataxios/webmcp-example-sync@workspace:examples/sync"],
 
     "@thegreataxios/webmcp-example-tools": ["@thegreataxios/webmcp-example-tools@workspace:examples/tools"],
+
+    "@thegreataxios/webmcp-example-vanilla": ["@thegreataxios/webmcp-example-vanilla@workspace:examples/vanilla"],
 
     "@thegreataxios/webmcp-examples-theme": ["@thegreataxios/webmcp-examples-theme@workspace:examples/_theme"],
 

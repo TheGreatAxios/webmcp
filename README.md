@@ -40,6 +40,7 @@ Standalone Vite + React demos live in [`examples/`](./examples). They share a un
 | [`examples/journeys`](./examples/journeys) | 43112 | Journey-scoped tools |
 | [`examples/confirm`](./examples/confirm) | 43113 | HITL confirmations |
 | [`examples/bridge`](./examples/bridge) | 43114 | Cursor MCP bridge |
+| [`examples/vanilla`](./examples/vanilla) | 43115 | No-React core: elements, registry, page client |
 
 ```bash
 bun install
@@ -57,6 +58,8 @@ bun run build
 bun run test
 bun run typecheck
 ```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md), [SECURITY.md](./SECURITY.md), and [CHANGELOG.md](./CHANGELOG.md).
 
 ## Architecture
 

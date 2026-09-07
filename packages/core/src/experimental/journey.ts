@@ -49,10 +49,3 @@ export function experimental_createJourneyRegistry(): JourneyRegistry {
     },
   };
 }
-
-export function experimental_defineJourney(
-  registry: JourneyRegistry,
-  definition: JourneyDefinition,
-): void {
-  registry.register(definition);
-}

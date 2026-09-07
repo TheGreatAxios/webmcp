@@ -6,11 +6,8 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { BridgeServerMessage } from "./protocol";
 import { PageSession } from "./session";
-import {
-  createBridgeWebSocketServer,
-  type BridgeServerOptions,
-  resolveBridgeOptions,
-} from "./websocket-server";
+import { createBridgeWebSocketServer, type BridgeServerOptions } from "./websocket-server";
+import { resolveBridgeOptions } from "./security";
 
 export interface McpBridgeOptions extends BridgeServerOptions {
   appName?: string;

@@ -1,6 +1,4 @@
 import type {
-  BridgeClientMessage,
-  BridgeServerMessage,
   BridgeToolSummary,
   JourneyRegistry,
   ModelContextTesting,
@@ -167,5 +165,3 @@ export function executeToolForBridge(
   }
   return testing.executeTool(name, JSON.stringify(args));
 }
-
-export type { BridgeClientMessage, BridgeServerMessage };

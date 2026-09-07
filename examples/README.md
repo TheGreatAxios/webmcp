@@ -7,7 +7,7 @@ Standalone Vite + React + TypeScript demos for `@thegreataxios/webmcp-*`.
 | Item | Convention |
 |------|------------|
 | Bundler | Vite |
-| UI | React 19 + TypeScript |
+| UI | React 19 + TypeScript (`vanilla` is plain TypeScript, no React — that is the point) |
 | Theme | `@thegreataxios/webmcp-examples-theme` (`examples/_theme`) |
 | Packages | workspace deps on `@thegreataxios/webmcp-react` + `@thegreataxios/webmcp-core` |
 | Ports | uncommon ports (`43110+`) — avoid 3000 / 5173 / 8080 |
@@ -42,6 +42,7 @@ bun run dev
 | [`journeys`](./journeys) | 43112 | journeys | Journey-scoped tool visibility |
 | [`confirm`](./confirm) | 43113 | confirm | Guarded tools + confirm dialog |
 | [`bridge`](./bridge) | 43114 | bridge | Bridge provider + Cursor MCP setup |
+| [`vanilla`](./vanilla) | 43115 | — | No-React: custom elements, direct registry, core page client |
 
 ## Local tool exercise (no bridge)
 

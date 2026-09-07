@@ -1,0 +1,20 @@
+{
+  "name": "@thegreataxios/webmcp-example-vanilla",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 43115 --strictPort",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 43115 --strictPort",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@thegreataxios/webmcp-core": "workspace:*",
+    "@thegreataxios/webmcp-examples-theme": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^6.3.5"
+  }
+}

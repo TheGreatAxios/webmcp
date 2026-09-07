@@ -3,11 +3,8 @@ import { installPolyfill, cleanupPolyfill } from "./polyfill";
 const PROVIDER_TAG = "webmcp-provider";
 const JOURNEY_TAG = "webmcp-journey";
 
-type ProviderElement = HTMLElement;
-type JourneyElement = HTMLElement;
-
-let providerElementClass: { new (): ProviderElement } | null = null;
-let journeyElementClass: { new (): JourneyElement } | null = null;
+let providerElementClass: { new (): HTMLElement } | null = null;
+let journeyElementClass: { new (): HTMLElement } | null = null;
 
 function ensureElementClasses(): void {
   if (typeof HTMLElement === "undefined") return;
@@ -62,7 +59,7 @@ export function registerWebMCPElements(): void {
   }
 }
 
-export function WebMCPProviderElement(): ProviderElement {
+export function WebMCPProviderElement(): HTMLElement {
   ensureElementClasses();
   if (!providerElementClass) {
     throw new Error("HTMLElement is not available in this environment");
@@ -70,7 +67,7 @@ export function WebMCPProviderElement(): ProviderElement {
   return new providerElementClass();
 }
 
-export function WebMCPJourneyElement(): JourneyElement {
+export function WebMCPJourneyElement(): HTMLElement {
   ensureElementClasses();
   if (!journeyElementClass) {
     throw new Error("HTMLElement is not available in this environment");

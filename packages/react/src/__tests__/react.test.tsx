@@ -267,6 +267,63 @@ describe("experimental_WebMCPJourney", () => {
     expect(changes).toBeGreaterThan(0);
     expect(changes).toBeLessThanOrEqual(4);
   });
+
+  test("emits toolchange when the journey switches", async () => {
+    function ToggleDemo() {
+      const [phase, setPhase] = useState<"a" | "b">("a");
+      return (
+        <>
+          <Journey name="phase-a" tools={["phase_a"]} when={phase === "a"}>
+            <WebMCPTool
+              name="phase_a"
+              description="A"
+              handler={async () => ({ content: [{ type: "text", text: "a" }] })}
+            />
+          </Journey>
+          <Journey name="phase-b" tools={["phase_b"]} when={phase === "b"}>
+            <WebMCPTool
+              name="phase_b"
+              description="B"
+              handler={async () => ({ content: [{ type: "text", text: "b" }] })}
+            />
+          </Journey>
+          <button type="button" data-testid="journey-toggle" onClick={() => setPhase("b")}>
+            toggle
+          </button>
+        </>
+      );
+    }
+
+    render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <ToggleDemo />
+      </WebMCPProvider>,
+    );
+
+    await waitFor(() =>
+      expect(navigator.modelContextTesting?.listTools().map((tool) => tool.name)).toEqual([
+        "phase_a",
+      ]),
+    );
+
+    let toolchanges = 0;
+    const onChange = () => toolchanges++;
+    document.modelContext!.addEventListener("toolchange", onChange);
+
+    act(() => {
+      (document.querySelector("[data-testid='journey-toggle']") as HTMLButtonElement).click();
+    });
+
+    await waitFor(() =>
+      expect(navigator.modelContextTesting?.listTools().map((tool) => tool.name)).toEqual([
+        "phase_b",
+      ]),
+    );
+    // toolchange is coalesced through a microtask
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    document.modelContext!.removeEventListener("toolchange", onChange);
+    expect(toolchanges).toBeGreaterThan(0);
+  });
 });
 
 describe("experimental_WebMCPConfirm", () => {

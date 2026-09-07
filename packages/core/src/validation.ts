@@ -32,20 +32,6 @@ export function assertInputSchema(schema: JsonSchema | undefined): void {
   }
 }
 
-export function assertExposedToOrigins(origins: string[] | undefined): void {
-  if (!origins) return;
-  for (const origin of origins) {
-    try {
-      const url = new URL(origin);
-      if (url.protocol !== "https:" && url.protocol !== "http:") {
-        throw new Error("bad protocol");
-      }
-    } catch {
-      throw new DOMException(`Invalid exposedTo origin: ${origin}`, "SyntaxError");
-    }
-  }
-}
-
 export function validateToolDescriptor(descriptor: ToolDescriptor): void {
   if (typeof descriptor.execute !== "function") {
     throw new TypeError("Tool execute must be a function");
