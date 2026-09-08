@@ -1,6 +1,6 @@
 {
   "name": "@thegreataxios/webmcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "webmcp umbrella package — re-exports core, react, and bridge",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -24,14 +24,22 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "LICENSE"],
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
-  "keywords": ["webmcp", "model-context", "document.modelContext", "w3c"],
+  "keywords": [
+    "webmcp",
+    "model-context",
+    "document.modelContext",
+    "w3c"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
