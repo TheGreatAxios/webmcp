@@ -28,3 +28,21 @@ export {
   experimental_useWebMCPBridgeStatus,
   type ExperimentalWebMCPBridgeProviderProps,
 } from "./experimental/bridge";
+
+import { experimental_WebMCPJourney } from "./experimental/journey";
+import {
+  experimental_WebMCPConfirmProvider,
+  experimental_WebMCPGuardedTool,
+} from "./experimental/confirm";
+import { experimental_WebMCPBridgeProvider } from "./experimental/bridge";
+
+/**
+ * PascalCase aliases for JSX.
+ *
+ * React treats lowercase-initial tags as HTML intrinsics, so
+ * `<experimental_WebMCPJourney />` is invalid. Prefer these in JSX.
+ */
+export const ExperimentalWebMCPJourney = experimental_WebMCPJourney;
+export const ExperimentalWebMCPConfirmProvider = experimental_WebMCPConfirmProvider;
+export const ExperimentalWebMCPGuardedTool = experimental_WebMCPGuardedTool;
+export const ExperimentalWebMCPBridgeProvider = experimental_WebMCPBridgeProvider;
