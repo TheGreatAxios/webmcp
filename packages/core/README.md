@@ -1,8 +1,8 @@
 # @thegreataxios/webmcp-core
 
-Spec-aligned core for the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API: `document.modelContext` polyfill, tool registry, custom elements, and local bridge client.
+Headless, spec-aligned browser core for the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API (`document.modelContext`).
 
-This is an independent community implementation by [@thegreataxios](https://github.com/thegreataxios), not official W3C software. See the [repository README](https://github.com/thegreataxios/webmcp#project-status) for project status and official spec links.
+Wraps [`@w3c/webmcp-polyfill`](https://github.com/w3c-oss/webmcp-polyfill) in secure browser contexts, provides a spec-aligned fallback for non-secure/test DOMs, and adds stability tracking, cross-origin policy helpers, journey filtering, and the localhost bridge page client.
 
 ## Install
 
@@ -10,95 +10,75 @@ This is an independent community implementation by [@thegreataxios](https://gith
 bun add @thegreataxios/webmcp-core
 ```
 
-## Stable API
-
-### When do you call `installPolyfill()`?
-
-**Usually you don’t import it.**
-
-| Setup | Polyfill |
-|-------|----------|
-| **React** — `WebMCPProvider` from `webmcp-react` | Installed automatically on mount |
-| **HTML** — `<webmcp-provider>` after `registerWebMCPElements()` | Installed when the element connects |
-| **Vanilla JS** — no provider/element | Call `installPolyfill()` yourself before `registerTool` |
-| **Native Chrome WebMCP** | `installPolyfill()` is a no-op; the browser API is used |
-
-`installPolyfill` exists for imperative/vanilla apps and tests. It is **not** meant to be imported in every app entry file.
+## Quick Start (Vanilla)
 
 ```ts
-import { installPolyfill, cleanupPolyfill, isNativeModelContext } from "@thegreataxios/webmcp-core";
+import { installPolyfill } from "@thegreataxios/webmcp-core";
 
-// Only when you are not using WebMCPProvider or <webmcp-provider>
-installPolyfill();
-await document.modelContext!.registerTool({ ... });
-cleanupPolyfill(); // pair with install when you own the page lifecycle
-```
+installPolyfill(); // no-op if native document.modelContext is present
 
-### Register tools (vanilla)
-
-```ts
-await document.modelContext.registerTool({
-  name: "search",
-  description: "Search the catalog",
-  inputSchema: {
-    type: "object",
-    properties: { q: { type: "string" } },
-    required: ["q"],
+const controller = new AbortController();
+await document.modelContext!.registerTool(
+  {
+    name: "search",
+    title: "Search Catalog",
+    description: "Search products by keyword",
+    inputSchema: {
+      type: "object",
+      properties: { q: { type: "string" } },
+      required: ["q"],
+    },
+    outputSchema: {
+      type: "object",
+      properties: { items: { type: "array" } },
+    },
+    annotations: { readOnlyHint: true },
+    execute: async ({ q }, options) => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(String(q))}`, {
+        signal: options?.signal,
+      });
+      return res.json();
+    },
   },
-  execute: async ({ q }) => ({
-    content: [{ type: "text", text: `Results for ${q}` }],
-  }),
-}, { signal });
+  { signal: controller.signal },
+);
 ```
 
-### Custom elements
-
-```html
-<webmcp-provider data-name="my-app">
-  <!-- tools registered via React or imperative API -->
-</webmcp-provider>
-```
+## Discovering & Executing Tools
 
 ```ts
-import { registerWebMCPElements } from "@thegreataxios/webmcp-core";
-registerWebMCPElements(); // defines elements; polyfill runs when <webmcp-provider> mounts
+const tools = await document.modelContext!.getTools();
+const rawJson = await document.modelContext!.executeTool(tools[0], { q: "boots" });
+const result = JSON.parse(rawJson);
 ```
 
-### Bridge page client
+### Events & Stability
 
-Connect a tab to `@thegreataxios/webmcp-bridge` (no Chrome extension):
+- `toolchange` — fired when tools are registered, unregistered, or journey-filtered.
+- `toolactivated` (`ToolActivatedEvent`) — fired after a tool's `execute` callback is invoked.
+- `toolcancel` (`ToolCancelEvent`) — fired when an in-flight tool execution's `AbortSignal` aborts.
+- `document.modelContext.waitForToolsUntil(promise)` — signals async hydration stability (`awaitToolsStable()`).
+
+## Bridge Page Client
 
 ```ts
 import { createPageBridgeClient } from "@thegreataxios/webmcp-core";
 
 const client = createPageBridgeClient({
   url: "ws://127.0.0.1:17321/ws",
-  token: process.env.WEBMCP_BRIDGE_TOKEN!,
+  token: "your-32-plus-char-token",
 });
 client.connect();
 ```
 
-## Experimental API
+Supports `sync_tools`, `execute_tool`, and `cancel_tool` (aborting in-flight tool executions cleanly).
+
+## Experimental Exports
 
 | Export | Purpose |
-|--------|---------|
+|---|---|
 | `experimental_createJourneyRegistry` | Phase-scoped tool exposure |
-| `experimental_defineJourney` | Register a journey definition |
-| `setJourneyRegistry` / `getJourneyRegistry` | Wire journeys into polyfill filter |
-
-Journeys map to W3C open discussion [#161](https://github.com/webmachinelearning/webmcp/issues/161). When any journey is active, only tools listed in active journeys are visible to agents.
-
-## Testing shim
-
-`navigator.modelContextTesting` is installed by the polyfill for local bridge and tests:
-
-- `listTools()`
-- `executeTool(name, argsJson)`
-- `registerToolsChangedCallback(cb)`
-
-## No Zod required
-
-Tool inputs use **JSON Schema** on descriptors. Validation runs at registration (name pattern, description, serializable schemas).
+| `setJourneyRegistry` / `getJourneyRegistry` | Wire journeys into tool discovery & bridge sync |
 
 ## License
 
