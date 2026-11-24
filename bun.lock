@@ -150,6 +150,17 @@
         "@w3c/webmcp-polyfill": "^0.2.0",
       },
     },
+    "packages/elements": {
+      "name": "@thegreataxios/webmcp-elements",
+      "version": "0.1.1",
+      "dependencies": {
+        "@thegreataxios/webmcp-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@happy-dom/global-registrator": "^20.0.0",
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/react": {
       "name": "@thegreataxios/webmcp-react",
       "version": "0.1.1",
@@ -176,6 +187,7 @@
       "dependencies": {
         "@thegreataxios/webmcp-bridge": "workspace:*",
         "@thegreataxios/webmcp-core": "workspace:*",
+        "@thegreataxios/webmcp-elements": "workspace:*",
         "@thegreataxios/webmcp-react": "workspace:*",
       },
     },
@@ -352,6 +364,8 @@
     "@thegreataxios/webmcp-bridge": ["@thegreataxios/webmcp-bridge@workspace:packages/bridge"],
 
     "@thegreataxios/webmcp-core": ["@thegreataxios/webmcp-core@workspace:packages/core"],
+
+    "@thegreataxios/webmcp-elements": ["@thegreataxios/webmcp-elements@workspace:packages/elements"],
 
     "@thegreataxios/webmcp-example-bridge": ["@thegreataxios/webmcp-example-bridge@workspace:examples/bridge"],
 

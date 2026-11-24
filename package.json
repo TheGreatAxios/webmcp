@@ -8,9 +8,9 @@
     "examples/_theme"
   ],
   "scripts": {
-    "build": "bun run --filter '@thegreataxios/webmcp-core' build && bun run --filter '@thegreataxios/webmcp-bridge' build && bun run --filter '@thegreataxios/webmcp-react' build && bun run --filter '@thegreataxios/webmcp' build",
+    "build": "bun run --filter '@thegreataxios/webmcp-core' build && bun run --filter '@thegreataxios/webmcp-elements' build && bun run --filter '@thegreataxios/webmcp-bridge' build && bun run --filter '@thegreataxios/webmcp-react' build && bun run --filter '@thegreataxios/webmcp' build",
     "build:examples": "bun run --filter '@thegreataxios/webmcp-example-*' build",
-    "test": "bun run --filter '@thegreataxios/webmcp-core' test && bun run --filter '@thegreataxios/webmcp-bridge' test && bun run --filter '@thegreataxios/webmcp-react' test && bun run --filter '@thegreataxios/webmcp' test",
+    "test": "bun run --filter '@thegreataxios/webmcp-core' test && bun run --filter '@thegreataxios/webmcp-elements' test && bun run --filter '@thegreataxios/webmcp-bridge' test && bun run --filter '@thegreataxios/webmcp-react' test && bun run --filter '@thegreataxios/webmcp' test",
     "typecheck": "bun run --filter '@thegreataxios/*' typecheck",
     "clean": "rm -rf packages/*/dist",
     "arch:check": "cargo run -p arch-lint -- check",
