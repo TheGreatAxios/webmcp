@@ -27,6 +27,11 @@
       "import": "./dist/elements.js",
       "require": "./dist/elements.cjs"
     },
+    "./svelte": {
+      "types": "./dist/svelte.d.ts",
+      "import": "./dist/svelte.js",
+      "require": "./dist/svelte.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -56,6 +61,7 @@
   "dependencies": {
     "@thegreataxios/webmcp-core": "workspace:*",
     "@thegreataxios/webmcp-elements": "workspace:*",
+    "@thegreataxios/webmcp-svelte": "workspace:*",
     "@thegreataxios/webmcp-react": "workspace:*",
     "@thegreataxios/webmcp-bridge": "workspace:*"
   }
