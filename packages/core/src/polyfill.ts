@@ -4,6 +4,7 @@ import {
   createToolCancelEvent,
   ensureEventConstructors,
 } from "./events";
+import { isToolVisibleToCaller } from "./origin-policy";
 import type {
   BridgeToolSummary,
   ExecuteToolOptions,
@@ -117,10 +118,18 @@ function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMC
       trackStabilityPromise(promise);
     },
 
-    async getTools(_options?: GetToolsOptions): Promise<ToolSnapshot[]> {
+    async getTools(options?: GetToolsOptions): Promise<ToolSnapshot[]> {
+      const callerOrigin =
+        typeof globalThis.location?.origin === "string" ? globalThis.location.origin : "null";
       return registry.listToolSnapshots().filter((snap) => {
-        if (!journeyRegistry) return true;
-        return journeyRegistry.isToolExposed(snap.name);
+        if (journeyRegistry && !journeyRegistry.isToolExposed(snap.name)) return false;
+        const reg = registry.getRegistration(snap.name);
+        return isToolVisibleToCaller(
+          callerOrigin,
+          snap.origin,
+          reg?.exposedTo ?? [],
+          options?.fromOrigins,
+        );
       });
     },
 

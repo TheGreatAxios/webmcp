@@ -521,4 +521,39 @@ describe("experimental_WebMCPConfirm", () => {
     });
     expect(executed).toBe(false);
   });
+
+  test("WebMCPTool forwards outputSchema and AbortSignal options", async () => {
+    let sawSignal = false;
+    render(
+      <WebMCPProvider name="test" version="0.0.0">
+        <WebMCPTool
+          name="typed_tool"
+          description="Typed tool"
+          outputSchema={{ type: "object", properties: { ok: { type: "boolean" } } }}
+          annotations={{ consequentialHint: true }}
+          handler={async (_args, options) => {
+            sawSignal = options?.signal instanceof AbortSignal;
+            return { ok: true };
+          }}
+        />
+      </WebMCPProvider>,
+    );
+
+    await waitFor(async () => {
+      const tools = await document.modelContext?.getTools();
+      expect(tools?.some((t) => t.name === "typed_tool")).toBe(true);
+    });
+
+    const tools = await document.modelContext!.getTools();
+    const tool = tools.find((t) => t.name === "typed_tool")!;
+    expect(tool.outputSchema).toEqual({
+      type: "object",
+      properties: { ok: { type: "boolean" } },
+    });
+    expect(tool.annotations?.consequentialHint).toBe(true);
+
+    const raw = await document.modelContext!.executeTool(tool, {});
+    expect(JSON.parse(raw)).toEqual({ ok: true });
+    expect(sawSignal).toBe(true);
+  });
 });

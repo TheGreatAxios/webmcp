@@ -22,6 +22,7 @@ import {
   type JourneyRegistry,
   type ToolAnnotations,
   type ToolDescriptor,
+  type ToolExecuteCallbackOptions,
 } from "@thegreataxios/webmcp-core";
 
 export interface WebMCPContextValue {
@@ -86,6 +87,17 @@ export function useWebMCP(): WebMCPContextValue {
   return useContext(WebMCPContext);
 }
 
+/**
+ * Signal async tool registration stability to `document.modelContext.waitForToolsUntil`.
+ */
+export function useWaitForToolsUntil(promise: Promise<unknown> | null | undefined): void {
+  const { available } = useWebMCP();
+  useEffect(() => {
+    if (!available || !promise || typeof document === "undefined") return;
+    document.modelContext?.waitForToolsUntil?.(promise);
+  }, [available, promise]);
+}
+
 const TOOL_OWNERS = new Map<string, symbol>();
 
 export interface WebMCPToolProps {
@@ -93,9 +105,13 @@ export interface WebMCPToolProps {
   description: string;
   title?: string;
   inputSchema?: JsonSchema;
+  outputSchema?: JsonSchema;
   annotations?: ToolAnnotations;
   exposedTo?: string[];
-  handler: (args: Record<string, unknown>) => CallToolResult | Promise<CallToolResult>;
+  handler: (
+    args: Record<string, unknown>,
+    options?: ToolExecuteCallbackOptions,
+  ) => CallToolResult | unknown | Promise<CallToolResult | unknown>;
 }
 
 export function WebMCPTool({
@@ -103,6 +119,7 @@ export function WebMCPTool({
   description,
   title,
   inputSchema,
+  outputSchema,
   annotations,
   exposedTo,
   handler,
@@ -111,15 +128,17 @@ export function WebMCPTool({
   const handlerRef = useRef(handler);
   handlerRef.current = handler;
 
-  const schemaKey = useMemo(() => JSON.stringify({ inputSchema, annotations, title }), [
-    inputSchema,
-    annotations,
-    title,
-  ]);
+  const schemaKey = useMemo(
+    () => JSON.stringify({ inputSchema, outputSchema, annotations, title, exposedTo }),
+    [inputSchema, outputSchema, annotations, title, exposedTo],
+  );
 
-  const stableHandler = useCallback(async (args: Record<string, unknown>) => {
-    return await handlerRef.current(args);
-  }, []);
+  const stableHandler = useCallback(
+    async (args: Record<string, unknown>, options?: ToolExecuteCallbackOptions) => {
+      return await handlerRef.current(args, options);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!available || typeof document === "undefined" || !document.modelContext) return;
@@ -136,6 +155,7 @@ export function WebMCPTool({
       title,
       description,
       inputSchema,
+      outputSchema,
       annotations,
       execute: stableHandler,
     };
@@ -151,7 +171,7 @@ export function WebMCPTool({
       TOOL_OWNERS.delete(name);
       controller.abort();
     };
-  }, [available, name, description, schemaKey, exposedTo, stableHandler]);
+  }, [available, name, description, schemaKey, stableHandler]);
 
   return null;
 }

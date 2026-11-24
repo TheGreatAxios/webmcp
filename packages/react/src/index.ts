@@ -1,5 +1,5 @@
 /// <reference path="./jsx.d.ts" />
-export { WebMCPProvider, WebMCPTool, useWebMCP } from "./provider";
+export { WebMCPProvider, WebMCPTool, useWebMCP, useWaitForToolsUntil } from "./provider";
 export type { WebMCPContextValue, WebMCPProviderProps, WebMCPToolProps } from "./provider";
 
 export {
