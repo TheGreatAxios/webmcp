@@ -36,6 +36,7 @@ export {
 } from "./polyfill";
 
 export { WebMCPToolActivatedEvent, WebMCPToolCancelEvent } from "./events";
+export { isToolVisibleToCaller } from "./origin-policy";
 
 export { createPageBridgeClient, type PageBridgeClientOptions, type PageBridgeStatus } from "./bridge/page-client";
 
