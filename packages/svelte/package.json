@@ -1,0 +1,51 @@
+{
+  "name": "@thegreataxios/webmcp-svelte",
+  "version": "0.1.1",
+  "description": "Svelte bindings for W3C WebMCP — context provider, tool registration, journeys, state sync, and bridge",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "keywords": [
+    "webmcp",
+    "svelte",
+    "svelte5",
+    "document.modelContext"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheGreatAxios/webmcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "svelte": ">=4.0.0"
+  },
+  "dependencies": {
+    "@thegreataxios/webmcp-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.0.0",
+    "svelte": "^5.0.0",
+    "typescript": "^5.9.3"
+  }
+}
