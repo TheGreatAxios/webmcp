@@ -1,0 +1,55 @@
+# Declarative architectural boundaries enforced by `arch-lint`.
+# Run: cargo run -p arch-lint -- check
+
+[global]
+max_file_lines = 450
+
+# ── Tooling ────────────────────────────────────────────────────────────────────
+[[layers]]
+name = "TOOLING"
+match_exact = ["arch-lint"]
+allowed_layer_deps = []
+forbidden_external_crates = []
+
+# ── L1: Pure domain types, protocol, and policy (zero I/O) ─────────────────────
+[[layers]]
+name = "L1"
+match_exact = ["webmcp-protocol", "webmcp-policy"]
+allowed_layer_deps = ["L1"]
+forbidden_external_crates = [
+    "tokio",
+    "axum",
+    "clap",
+    "rand",
+    "tokio-tungstenite",
+]
+
+# ── L2: Concrete I/O adapters (depend only on L1) ─────────────────────────────
+[[layers]]
+name = "L2"
+match_exact = ["webmcp-auth", "webmcp-ws", "webmcp-mcp"]
+allowed_layer_deps = ["L1"]
+forbidden_external_crates = ["clap"]
+
+# ── L3: Composition root ──────────────────────────────────────────────────────
+[[layers]]
+name = "L3"
+match_exact = ["webmcp-bridge"]
+allowed_layer_deps = ["L1", "L2"]
+forbidden_external_crates = []
+
+# ── Domain isolation ──────────────────────────────────────────────────────────
+[[domain_rules]]
+name = "protocol-is-leaf"
+from_prefixes = ["webmcp-protocol"]
+deny_target_prefixes = ["webmcp-policy", "webmcp-auth", "webmcp-ws", "webmcp-mcp"]
+
+[[domain_rules]]
+name = "ws-does-not-know-mcp"
+from_prefixes = ["webmcp-ws"]
+deny_target_prefixes = ["webmcp-mcp"]
+
+[[domain_rules]]
+name = "mcp-does-not-know-ws"
+from_prefixes = ["webmcp-mcp"]
+deny_target_prefixes = ["webmcp-ws"]

@@ -1,0 +1,21 @@
+[package]
+name = "webmcp-ws"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+axum.workspace = true
+futures-util.workspace = true
+serde_json.workspace = true
+subtle.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+webmcp-policy.workspace = true
+webmcp-protocol.workspace = true
+
+[dev-dependencies]
+tokio-tungstenite.workspace = true
