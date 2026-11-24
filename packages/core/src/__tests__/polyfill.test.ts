@@ -91,6 +91,43 @@ describe("polyfill", () => {
       /no longer registered/,
     );
   });
+
+  test("maps unserializable results and thrown errors to OperationError", async () => {
+    installPolyfill();
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    await document.modelContext!.registerTool({
+      name: "circular_tool",
+      description: "Returns circular object",
+      execute: () => circular,
+    });
+    await document.modelContext!.registerTool({
+      name: "throwing_tool",
+      description: "Throws an error",
+      execute: () => {
+        throw new Error("boom");
+      },
+    });
+
+    const tools = await document.modelContext!.getTools();
+    const circ = tools.find((t) => t.name === "circular_tool")!;
+    const thr = tools.find((t) => t.name === "throwing_tool")!;
+
+    for (const [tool, pattern] of [
+      [circ, /JSON-serializable/],
+      [thr, /boom/],
+    ] as const) {
+      try {
+        await document.modelContext!.executeTool(tool, {});
+        expect.unreachable("should throw");
+      } catch (err) {
+        expect(err).toBeInstanceOf(DOMException);
+        expect((err as DOMException).name).toBe("OperationError");
+        expect((err as DOMException).message).toMatch(pattern);
+      }
+    }
+  });
 });
 
 describe("journey filtering", () => {

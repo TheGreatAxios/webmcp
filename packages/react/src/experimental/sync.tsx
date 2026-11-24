@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useLayoutEffect,
   useRef,
   useState,
   type Dispatch,
@@ -46,7 +47,9 @@ export function experimental_useWebMCPSync<T>(options: WebMCPSyncOptions<T>): We
   const [state, setReactState] = useState<T>(options.initial);
   const stateRef = useRef(state);
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useLayoutEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
   const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const setState = useCallback<Dispatch<SetStateAction<T>>>((action) => {

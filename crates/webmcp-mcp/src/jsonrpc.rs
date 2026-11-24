@@ -86,13 +86,19 @@ pub async fn handle_jsonrpc_request(
 ) -> Option<JsonRpcResponse> {
     let req: JsonRpcRequest = match serde_json::from_str(raw) {
         Ok(r) => r,
-        Err(e) => return Some(JsonRpcResponse::err(Value::Null, -32700, format!("Parse error: {e}"))),
+        Err(e) => {
+            return Some(JsonRpcResponse::err(
+                Value::Null,
+                -32700,
+                format!("Parse error: {e}"),
+            ));
+        }
     };
 
     if req.jsonrpc != "2.0" {
-        return req.id.map(|id| {
-            JsonRpcResponse::err(id, -32600, "Invalid Request: jsonrpc must be '2.0'")
-        });
+        return req
+            .id
+            .map(|id| JsonRpcResponse::err(id, -32600, "Invalid Request: jsonrpc must be '2.0'"));
     }
 
     // Notifications (no id) require no response.
@@ -145,7 +151,11 @@ pub async fn handle_jsonrpc_request(
         "tools/call" => {
             let params = req.params.unwrap_or_else(|| json!({}));
             let Some(name) = params.get("name").and_then(Value::as_str) else {
-                return Some(JsonRpcResponse::err(id, -32602, "Missing required param 'name'"));
+                return Some(JsonRpcResponse::err(
+                    id,
+                    -32602,
+                    "Missing required param 'name'",
+                ));
             };
             let args = params
                 .get("arguments")
@@ -203,7 +213,11 @@ mod tests {
                 }]
             })
         }
-        fn execute_tool(&self, _name: String, args: Value) -> BoxFuture<'_, Result<Value, HubError>> {
+        fn execute_tool(
+            &self,
+            _name: String,
+            args: Value,
+        ) -> BoxFuture<'_, Result<Value, HubError>> {
             Box::pin(async move { Ok(json!({ "echoed": args })) })
         }
         fn wait_tools_changed(&self) -> BoxFuture<'_, ()> {
@@ -223,7 +237,10 @@ mod tests {
         )
         .await
         .expect("init resp");
-        assert_eq!(init.result.expect("res")["protocolVersion"], MCP_PROTOCOL_VERSION);
+        assert_eq!(
+            init.result.expect("res")["protocolVersion"],
+            MCP_PROTOCOL_VERSION
+        );
 
         let list = handle_jsonrpc_request(
             &hub,
@@ -246,5 +263,53 @@ mod tests {
             .expect("text")
             .to_string();
         assert!(text.contains("\"a\":1"));
+    }
+
+    #[tokio::test]
+    async fn validates_jsonrpc_errors_and_notifications() {
+        let hub = MockHub;
+        let info = McpServerInfo::default();
+
+        // Malformed JSON -> -32700
+        let parse_err = handle_jsonrpc_request(&hub, &info, "{not json")
+            .await
+            .expect("err");
+        assert_eq!(parse_err.error.expect("e").code, -32700);
+
+        // Wrong jsonrpc version -> -32600
+        let ver_err =
+            handle_jsonrpc_request(&hub, &info, r#"{"jsonrpc":"1.0","id":1,"method":"ping"}"#)
+                .await
+                .expect("err");
+        assert_eq!(ver_err.error.expect("e").code, -32600);
+
+        // Unknown method -> -32601
+        let meth_err = handle_jsonrpc_request(
+            &hub,
+            &info,
+            r#"{"jsonrpc":"2.0","id":2,"method":"unknown/op"}"#,
+        )
+        .await
+        .expect("err");
+        assert_eq!(meth_err.error.expect("e").code, -32601);
+
+        // Missing tool name -> -32602
+        let param_err = handle_jsonrpc_request(
+            &hub,
+            &info,
+            r#"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{}}"#,
+        )
+        .await
+        .expect("err");
+        assert_eq!(param_err.error.expect("e").code, -32602);
+
+        // Notification (no id) -> None
+        let notif = handle_jsonrpc_request(
+            &hub,
+            &info,
+            r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
+        )
+        .await;
+        assert!(notif.is_none());
     }
 }

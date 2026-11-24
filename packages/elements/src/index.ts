@@ -200,8 +200,17 @@ function ensureElementClasses(): void {
       const controller = new AbortController();
       this.#controller = controller;
 
-      const inputSchema = this.#inputSchema ?? parseJsonSlot(this, "input-schema");
-      const outputSchema = this.#outputSchema ?? parseJsonSlot(this, "output-schema");
+      let inputSchema: JsonSchema | undefined;
+      let outputSchema: JsonSchema | undefined;
+      try {
+        inputSchema = this.#inputSchema ?? parseJsonSlot(this, "input-schema");
+        outputSchema = this.#outputSchema ?? parseJsonSlot(this, "output-schema");
+      } catch (error) {
+        this.dispatchEvent(
+          new CustomEvent("webmcp-error", { detail: { name, error }, bubbles: true }),
+        );
+        return;
+      }
       const exposedTo = parseCsvAttr(this, "exposed-to");
       const title = this.getAttribute("title") ?? undefined;
       const annotations = this.#readAnnotations();

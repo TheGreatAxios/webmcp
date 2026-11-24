@@ -13,6 +13,8 @@ use webmcp_protocol::{
 };
 
 const DEFAULT_TOOL_TIMEOUT: Duration = Duration::from_secs(60);
+const MAX_SYNCED_TOOLS: usize = 256;
+const MAX_PENDING_CALLS: usize = 64;
 
 type PendingSender = oneshot::Sender<Result<Value, HubError>>;
 
@@ -42,10 +44,12 @@ impl Default for PageSessionHub {
 }
 
 impl PageSessionHub {
+    #[must_use]
     pub fn new() -> Self {
         Self::with_timeout(DEFAULT_TOOL_TIMEOUT)
     }
 
+    #[must_use]
     pub fn with_timeout(timeout: Duration) -> Self {
         Self {
             inner: Arc::new(SessionInner {
@@ -97,6 +101,7 @@ impl PageSessionHub {
                 let valid: Vec<BridgeToolSummary> = tools
                     .into_iter()
                     .filter(|t| validate_tool_summary(t).is_ok())
+                    .take(MAX_SYNCED_TOOLS)
                     .collect();
                 self.set_tools(valid).await;
             }
@@ -115,7 +120,13 @@ impl PageSessionHub {
 
     /// Request cancellation of an in-flight tool call on the connected page.
     pub async fn cancel_tool(&self, id: String) {
-        let outbound = self.inner.outbound.read().await.as_ref().map(|s| s.tx.clone());
+        let outbound = self
+            .inner
+            .outbound
+            .read()
+            .await
+            .as_ref()
+            .map(|s| s.tx.clone());
         if let Some(tx) = outbound {
             let _ = tx.send(BridgeServerMessage::CancelTool { id });
         }
@@ -155,7 +166,15 @@ impl BridgeHub for PageSessionHub {
 
             let id = Uuid::new_v4().to_string();
             let (tx, rx) = oneshot::channel();
-            self.inner.pending.lock().await.insert(id.clone(), tx);
+            {
+                let mut pending = self.inner.pending.lock().await;
+                if pending.len() >= MAX_PENDING_CALLS {
+                    return Err(HubError::ToolFailed(
+                        "too many concurrent tool calls in flight".into(),
+                    ));
+                }
+                pending.insert(id.clone(), tx);
+            }
 
             let msg = BridgeServerMessage::ExecuteTool {
                 id: id.clone(),
@@ -183,5 +202,115 @@ impl BridgeHub for PageSessionHub {
         Box::pin(async move {
             self.inner.tools_changed.notified().await;
         })
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[tokio::test]
+    async fn stale_detach_does_not_clobber_new_session() {
+        let hub = PageSessionHub::new();
+        let (tx1, _rx1) = mpsc::unbounded_channel();
+        let (tx2, mut rx2) = mpsc::unbounded_channel();
+
+        let id1 = hub.attach(tx1).await;
+        let _id2 = hub.attach(tx2).await;
+
+        // Closing the stale first tab must NOT clear the active second tab.
+        hub.detach(id1).await;
+
+        let hub_exec = hub.clone();
+        let exec =
+            tokio::spawn(async move { hub_exec.execute_tool("ping".into(), json!({})).await });
+
+        let frame = rx2
+            .recv()
+            .await
+            .expect("second session still receives frames");
+        let call_id = match frame {
+            BridgeServerMessage::ExecuteTool { id, .. } => id,
+            other => panic!("unexpected frame: {other:?}"),
+        };
+        hub.handle_authenticated_message(BridgeClientMessage::ToolResult {
+            id: call_id,
+            result: ToolResultPayload::Value(json!({ "ok": true })),
+        })
+        .await;
+
+        assert_eq!(
+            exec.await.expect("join").expect("ok"),
+            json!({ "ok": true })
+        );
+    }
+
+    #[tokio::test]
+    async fn timeout_cancels_inflight_tool_and_emits_cancel_tool_frame() {
+        let hub = PageSessionHub::with_timeout(Duration::from_millis(25));
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let _id = hub.attach(tx).await;
+
+        let err = hub
+            .execute_tool("hang".into(), json!({}))
+            .await
+            .expect_err("should time out");
+        assert_eq!(err, HubError::Timeout);
+
+        let first = rx.recv().await.expect("execute frame");
+        let call_id = match first {
+            BridgeServerMessage::ExecuteTool { id, .. } => id,
+            other => panic!("expected ExecuteTool, got {other:?}"),
+        };
+        let second = rx.recv().await.expect("cancel frame");
+        assert_eq!(second, BridgeServerMessage::CancelTool { id: call_id });
+    }
+
+    #[tokio::test]
+    async fn disconnect_fails_inflight_tool_calls_with_disconnected() {
+        let hub = PageSessionHub::new();
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let session_id = hub.attach(tx).await;
+
+        let hub_exec = hub.clone();
+        let exec =
+            tokio::spawn(async move { hub_exec.execute_tool("slow".into(), json!({})).await });
+
+        let _ = rx.recv().await.expect("received execute_tool");
+        hub.detach(session_id).await;
+
+        let err = exec.await.expect("join").expect_err("should fail");
+        assert_eq!(err, HubError::Disconnected);
+    }
+
+    #[tokio::test]
+    async fn sync_tools_caps_count_and_drops_invalid_tools() {
+        let hub = PageSessionHub::new();
+        let mut tools = vec![BridgeToolSummary {
+            name: "bad name with spaces".into(),
+            title: None,
+            description: "invalid".into(),
+            input_schema: None,
+            output_schema: None,
+            annotations: None,
+        }];
+        for i in 0..(MAX_SYNCED_TOOLS + 10) {
+            tools.push(BridgeToolSummary {
+                name: format!("tool_{i}"),
+                title: None,
+                description: "valid".into(),
+                input_schema: None,
+                output_schema: None,
+                annotations: None,
+            });
+        }
+        hub.handle_authenticated_message(BridgeClientMessage::SyncTools { tools })
+            .await;
+
+        let synced = hub.list_tools().await;
+        assert_eq!(synced.len(), MAX_SYNCED_TOOLS);
+        assert!(synced.iter().all(|t| t.name != "bad name with spaces"));
     }
 }
