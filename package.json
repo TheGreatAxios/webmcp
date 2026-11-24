@@ -14,14 +14,16 @@
     "typecheck": "bun run --filter '@thegreataxios/*' typecheck",
     "clean": "rm -rf packages/*/dist",
     "arch:check": "cargo run -p arch-lint -- check",
+    "modularity:check": "bun scripts/check-modularity.ts",
     "rust:test": "cargo test --workspace",
     "rust:clippy": "cargo clippy --workspace --all-targets -- -D warnings",
     "rust:build": "cargo build --release -p webmcp-bridge",
     "release": "bun scripts/release.ts"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
+    "@types/bun": "latest",
+    "skott": "^0.35.12",
     "tsup": "^8.5.0",
-    "@types/bun": "latest"
+    "typescript": "^5.9.3"
   }
 }
