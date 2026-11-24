@@ -1,4 +1,9 @@
 import { installWebMCP } from "@w3c/webmcp-polyfill";
+import {
+  createToolActivatedEvent,
+  createToolCancelEvent,
+  ensureEventConstructors,
+} from "./events";
 import type {
   BridgeToolSummary,
   ExecuteToolOptions,
@@ -19,6 +24,21 @@ let polyfillCount = 0;
 let installedRegistry: ToolRegistry | null = null;
 let journeyRegistry: JourneyRegistry | null = null;
 let usedW3cPolyfill = false;
+const stabilityPromises = new Set<Promise<unknown>>();
+
+export function awaitToolsStable(): Promise<void> {
+  if (stabilityPromises.size === 0) return Promise.resolve();
+  return Promise.allSettled(Array.from(stabilityPromises)).then(() => {
+    if (stabilityPromises.size > 0) return awaitToolsStable();
+  });
+}
+
+function trackStabilityPromise(promise: Promise<unknown>): void {
+  const wrapped = Promise.resolve(promise).finally(() => {
+    stabilityPromises.delete(wrapped);
+  });
+  stabilityPromises.add(wrapped);
+}
 
 export function setJourneyRegistry(registry: JourneyRegistry | null): void {
   journeyRegistry = registry;
@@ -49,8 +69,28 @@ function serializeResult(value: unknown): string {
 }
 
 function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMCPPolyfillMarker {
-  const target = new EventTarget() as EventTarget & WebMCPPolyfillMarker;
+  ensureEventConstructors();
+  const target = new EventTarget() as EventTarget &
+    WebMCPPolyfillMarker & {
+      ontoolchange: ((ev: Event) => unknown) | null;
+      ontoolactivated: ((ev: Event) => unknown) | null;
+      ontoolcancel: ((ev: Event) => unknown) | null;
+    };
   target[POLYFILL_MARKER] = true;
+  target.ontoolchange = null;
+  target.ontoolactivated = null;
+  target.ontoolcancel = null;
+
+  const dispatchWithHandler = (
+    event: Event,
+    handlerName: "ontoolchange" | "ontoolactivated" | "ontoolcancel",
+  ) => {
+    target.dispatchEvent(event);
+    const handler = target[handlerName];
+    if (typeof handler === "function") {
+      handler.call(target, event);
+    }
+  };
 
   let changeScheduled = false;
   const scheduleToolChange = () => {
@@ -58,7 +98,7 @@ function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMC
     changeScheduled = true;
     queueMicrotask(() => {
       changeScheduled = false;
-      target.dispatchEvent(new Event("toolchange"));
+      dispatchWithHandler(new Event("toolchange"), "ontoolchange");
     });
   };
 
@@ -71,6 +111,10 @@ function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMC
     async registerTool(tool: ToolDescriptor, options?: RegisterToolOptions): Promise<void> {
       await registry.register(tool, options);
       scheduleToolChange();
+    },
+
+    waitForToolsUntil(promise: Promise<unknown>): void {
+      trackStabilityPromise(promise);
     },
 
     async getTools(_options?: GetToolsOptions): Promise<ToolSnapshot[]> {
@@ -100,14 +144,25 @@ function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMC
       }
 
       const controller = new AbortController();
-      const onCallerAbort = () => controller.abort(options?.signal?.reason);
+      const onCallerAbort = () => {
+        controller.abort(options?.signal?.reason);
+        dispatchWithHandler(createToolCancelEvent(reg.descriptor.name), "ontoolcancel");
+      };
       options?.signal?.addEventListener("abort", onCallerAbort, { once: true });
 
       try {
-        const result = await reg.descriptor.execute(
-          inputObject as Record<string, unknown>,
-          { signal: controller.signal },
+        const execPromise = Promise.resolve(
+          reg.descriptor.execute(inputObject as Record<string, unknown>, {
+            signal: controller.signal,
+          }),
         );
+        // Per W3C WebMCP PR #371: fire `toolactivated` after invoking execute.
+        dispatchWithHandler(createToolActivatedEvent(reg.descriptor.name), "ontoolactivated");
+
+        const result = await execPromise;
+        if (options?.signal?.aborted) {
+          throw options.signal.reason ?? new DOMException("Tool execution was aborted", "AbortError");
+        }
         return serializeResult(result);
       } catch (err) {
         if (err instanceof DOMException) throw err;
@@ -199,6 +254,12 @@ export function installPolyfill(): boolean {
       installWebMCP();
       if ("modelContext" in document && document.modelContext) {
         usedW3cPolyfill = true;
+        if (typeof document.modelContext.waitForToolsUntil !== "function") {
+          Object.defineProperty(document.modelContext, "waitForToolsUntil", {
+            configurable: true,
+            value: trackStabilityPromise,
+          });
+        }
       }
     } catch {
       usedW3cPolyfill = false;

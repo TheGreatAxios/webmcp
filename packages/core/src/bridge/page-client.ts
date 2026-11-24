@@ -11,7 +11,7 @@ export type PageBridgeStatus = "disconnected" | "connecting" | "connected" | "er
 
 /**
  * Connects the current page to a local webmcp-bridge WebSocket server.
- * Syncs exposed tools and executes tool calls from the bridge.
+ * Syncs exposed tools, executes tool calls, and propagates cancellation signals.
  */
 export function createPageBridgeClient(options: PageBridgeClientOptions): {
   connect: () => void;
@@ -21,10 +21,18 @@ export function createPageBridgeClient(options: PageBridgeClientOptions): {
   let ws: WebSocket | null = null;
   let status: PageBridgeStatus = "disconnected";
   let offToolsChange: (() => void) | null = null;
+  const inflight = new Map<string, AbortController>();
 
   const setStatus = (next: PageBridgeStatus) => {
     status = next;
     options.onStatusChange?.(next);
+  };
+
+  const abortAllInflight = () => {
+    for (const controller of inflight.values()) {
+      controller.abort(new DOMException("Bridge disconnected", "AbortError"));
+    }
+    inflight.clear();
   };
 
   const syncTools = () => {
@@ -53,9 +61,20 @@ export function createPageBridgeClient(options: PageBridgeClientOptions): {
       return;
     }
 
+    if (data.type === "cancel_tool") {
+      const controller = inflight.get(data.id);
+      if (controller) {
+        inflight.delete(data.id);
+        controller.abort(new DOMException("Cancelled by bridge", "AbortError"));
+      }
+      return;
+    }
+
     if (data.type === "execute_tool") {
+      const controller = new AbortController();
+      inflight.set(data.id, controller);
       try {
-        const raw = await executeToolForBridge(data.name, data.args);
+        const raw = await executeToolForBridge(data.name, data.args, { signal: controller.signal });
         const result = typeof raw === "string" ? JSON.parse(raw) : raw;
         ws?.send(
           JSON.stringify({
@@ -72,6 +91,8 @@ export function createPageBridgeClient(options: PageBridgeClientOptions): {
             result: { error: err instanceof Error ? err.message : String(err) },
           } satisfies BridgeClientMessage),
         );
+      } finally {
+        inflight.delete(data.id);
       }
     }
   };
@@ -88,6 +109,7 @@ export function createPageBridgeClient(options: PageBridgeClientOptions): {
         handleMessage(e).catch(() => setStatus("error"));
       });
       ws.addEventListener("close", () => {
+        abortAllInflight();
         setStatus("disconnected");
         ws = null;
         offToolsChange?.();
@@ -102,6 +124,7 @@ export function createPageBridgeClient(options: PageBridgeClientOptions): {
       }
     },
     disconnect() {
+      abortAllInflight();
       offToolsChange?.();
       offToolsChange = null;
       ws?.close();
