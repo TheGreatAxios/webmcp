@@ -28,6 +28,9 @@ export function assertSerializableJson(value: unknown, label: string): void {
 
 export function assertInputSchema(schema: JsonSchema | undefined): void {
   if (schema !== undefined) {
+    if (typeof schema !== "object" || schema === null || Array.isArray(schema)) {
+      throw new DOMException("inputSchema must be a JSON object", "SyntaxError");
+    }
     assertSerializableJson(schema, "inputSchema");
   }
 }
@@ -40,6 +43,13 @@ export function validateToolDescriptor(descriptor: ToolDescriptor): void {
   assertToolDescription(descriptor.description);
   assertInputSchema(descriptor.inputSchema);
   if (descriptor.outputSchema !== undefined) {
+    if (
+      typeof descriptor.outputSchema !== "object" ||
+      descriptor.outputSchema === null ||
+      Array.isArray(descriptor.outputSchema)
+    ) {
+      throw new DOMException("outputSchema must be a JSON object", "SyntaxError");
+    }
     assertSerializableJson(descriptor.outputSchema, "outputSchema");
   }
   if (descriptor.annotations !== undefined) {
@@ -52,10 +62,10 @@ export function parseToolArgsJson(inputArgsJson: string): Record<string, unknown
   try {
     parsed = JSON.parse(inputArgsJson);
   } catch {
-    throw new DOMException("Invalid JSON input", "OperationError");
+    throw new DOMException("Invalid JSON input", "DataError");
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new DOMException("Input must be a JSON object", "OperationError");
+    throw new DOMException("Input must be a JSON object", "DataError");
   }
   return parsed as Record<string, unknown>;
 }

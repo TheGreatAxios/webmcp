@@ -31,7 +31,13 @@ describe("parseToolArgsJson", () => {
     expect(parseToolArgsJson('{"a":1}')).toEqual({ a: 1 });
   });
 
-  test("rejects non-object", () => {
-    expect(() => parseToolArgsJson("[]")).toThrow();
+  test("rejects non-object with DataError", () => {
+    try {
+      parseToolArgsJson("[]");
+      expect.unreachable("should throw");
+    } catch (err) {
+      expect(err).toBeInstanceOf(DOMException);
+      expect((err as DOMException).name).toBe("DataError");
+    }
   });
 });

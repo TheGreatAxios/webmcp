@@ -1,8 +1,13 @@
+import { installWebMCP } from "@w3c/webmcp-polyfill";
 import type {
   BridgeToolSummary,
+  ExecuteToolOptions,
+  GetToolsOptions,
   JourneyRegistry,
   ModelContextTesting,
+  RegisterToolOptions,
   ToolDescriptor,
+  ToolSnapshot,
   WebMCPPolyfillMarker,
 } from "./types";
 import { createToolRegistry, type ToolRegistry } from "./registry";
@@ -13,6 +18,7 @@ const POLYFILL_MARKER = "__isWebMCPPolyfill" as const;
 let polyfillCount = 0;
 let installedRegistry: ToolRegistry | null = null;
 let journeyRegistry: JourneyRegistry | null = null;
+let usedW3cPolyfill = false;
 
 export function setJourneyRegistry(registry: JourneyRegistry | null): void {
   journeyRegistry = registry;
@@ -29,7 +35,20 @@ function filterExposedTools(registry: ToolRegistry): BridgeToolSummary[] {
   });
 }
 
-function createModelContext(registry: ToolRegistry): EventTarget & WebMCPPolyfillMarker {
+function serializeResult(value: unknown): string {
+  try {
+    const serialized = JSON.stringify(value ?? null);
+    if (serialized === undefined) {
+      throw new DOMException("Tool result is not JSON-serializable", "OperationError");
+    }
+    return serialized;
+  } catch (err) {
+    if (err instanceof DOMException) throw err;
+    throw new DOMException("Tool result is not JSON-serializable", "OperationError");
+  }
+}
+
+function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMCPPolyfillMarker {
   const target = new EventTarget() as EventTarget & WebMCPPolyfillMarker;
   target[POLYFILL_MARKER] = true;
 
@@ -49,13 +68,56 @@ function createModelContext(registry: ToolRegistry): EventTarget & WebMCPPolyfil
   }
 
   const modelContext = Object.assign(target, {
-    async registerTool(
-      tool: ToolDescriptor,
-      options?: { signal?: AbortSignal; exposedTo?: string[] },
-    ): Promise<undefined> {
+    async registerTool(tool: ToolDescriptor, options?: RegisterToolOptions): Promise<void> {
       await registry.register(tool, options);
       scheduleToolChange();
-      return undefined;
+    },
+
+    async getTools(_options?: GetToolsOptions): Promise<ToolSnapshot[]> {
+      return registry.listToolSnapshots().filter((snap) => {
+        if (!journeyRegistry) return true;
+        return journeyRegistry.isToolExposed(snap.name);
+      });
+    },
+
+    async executeTool(
+      tool: ToolSnapshot,
+      inputObject: object = {},
+      options?: ExecuteToolOptions,
+    ): Promise<string> {
+      const reg = registry.getRegistrationBySnapshot(tool);
+      if (!reg) {
+        throw new DOMException(`Tool "${tool.name}" is no longer registered`, "NotFoundError");
+      }
+      if (journeyRegistry && !journeyRegistry.isToolExposed(reg.descriptor.name)) {
+        throw new DOMException(
+          `Tool "${reg.descriptor.name}" is not exposed in the active journey`,
+          "NotFoundError",
+        );
+      }
+      if (options?.signal?.aborted) {
+        throw options.signal.reason ?? new DOMException("Tool execution was aborted", "AbortError");
+      }
+
+      const controller = new AbortController();
+      const onCallerAbort = () => controller.abort(options?.signal?.reason);
+      options?.signal?.addEventListener("abort", onCallerAbort, { once: true });
+
+      try {
+        const result = await reg.descriptor.execute(
+          inputObject as Record<string, unknown>,
+          { signal: controller.signal },
+        );
+        return serializeResult(result);
+      } catch (err) {
+        if (err instanceof DOMException) throw err;
+        throw new DOMException(
+          err instanceof Error ? err.message : String(err),
+          "OperationError",
+        );
+      } finally {
+        options?.signal?.removeEventListener("abort", onCallerAbort);
+      }
     },
   });
 
@@ -75,7 +137,10 @@ function createTestingShim(registry: ToolRegistry): ModelContextTesting {
     },
     async executeTool(toolName, inputArgsJson, options) {
       if (journeyRegistry && !journeyRegistry.isToolExposed(toolName)) {
-        throw new DOMException(`Tool "${toolName}" is not exposed in the active journey`, "NotFoundError");
+        throw new DOMException(
+          `Tool "${toolName}" is not exposed in the active journey`,
+          "NotFoundError",
+        );
       }
       const tool = registry.getTool(toolName);
       if (!tool) {
@@ -85,8 +150,15 @@ function createTestingShim(registry: ToolRegistry): ModelContextTesting {
         throw new DOMException("Tool execution was aborted", "AbortError");
       }
       const parsed = parseToolArgsJson(inputArgsJson);
-      const result = await tool.execute(parsed);
-      return JSON.stringify(result);
+      const controller = new AbortController();
+      const onAbort = () => controller.abort(options?.signal?.reason);
+      options?.signal?.addEventListener("abort", onAbort, { once: true });
+      try {
+        const result = await tool.execute(parsed, { signal: controller.signal });
+        return serializeResult(result);
+      } finally {
+        options?.signal?.removeEventListener("abort", onAbort);
+      }
     },
     registerToolsChangedCallback(callback) {
       offChange?.();
@@ -105,6 +177,7 @@ function createTestingShim(registry: ToolRegistry): ModelContextTesting {
 
 export function isNativeModelContext(): boolean {
   if (typeof document === "undefined") return false;
+  if (usedW3cPolyfill) return false;
   const mc = document.modelContext as WebMCPPolyfillMarker | undefined;
   return mc != null && mc[POLYFILL_MARKER] !== true;
 }
@@ -117,13 +190,29 @@ export function installPolyfill(): boolean {
   if (polyfillCount > 1) return true;
 
   installedRegistry = createToolRegistry();
-  const modelContext = createModelContext(installedRegistry);
 
-  Object.defineProperty(document, "modelContext", {
-    configurable: true,
-    enumerable: true,
-    value: modelContext,
-  });
+  // Prefer the official @w3c/webmcp-polyfill in real secure browser contexts when
+  // no modelContext exists yet; fall back to our spec-aligned implementation in
+  // non-secure / test DOM environments.
+  if (globalThis.isSecureContext && !("modelContext" in document)) {
+    try {
+      installWebMCP();
+      if ("modelContext" in document && document.modelContext) {
+        usedW3cPolyfill = true;
+      }
+    } catch {
+      usedW3cPolyfill = false;
+    }
+  }
+
+  if (!usedW3cPolyfill) {
+    const modelContext = createFallbackModelContext(installedRegistry);
+    Object.defineProperty(document, "modelContext", {
+      configurable: true,
+      enumerable: true,
+      value: modelContext,
+    });
+  }
 
   Object.defineProperty(navigator, "modelContextTesting", {
     configurable: true,
@@ -142,7 +231,10 @@ export function cleanupPolyfill(): void {
   if (polyfillCount > 0) return;
 
   installedRegistry = null;
-  Reflect.deleteProperty(document, "modelContext");
+  if (!usedW3cPolyfill) {
+    Reflect.deleteProperty(document, "modelContext");
+  }
+  usedW3cPolyfill = false;
   Reflect.deleteProperty(navigator, "modelContextTesting");
 }
 
@@ -155,13 +247,21 @@ export function listBridgeToolSummaries(): BridgeToolSummary[] {
   return filterExposedTools(installedRegistry);
 }
 
-export function executeToolForBridge(
+export async function executeToolForBridge(
   name: string,
   args: Record<string, unknown>,
+  options?: ExecuteToolOptions,
 ): Promise<unknown> {
+  if (typeof document !== "undefined" && document.modelContext?.getTools) {
+    const tools = await document.modelContext.getTools();
+    const match = tools.find((t) => t.name === name);
+    if (match && document.modelContext.executeTool) {
+      return document.modelContext.executeTool(match, args, options);
+    }
+  }
   const testing = navigator.modelContextTesting;
   if (!testing) {
     throw new Error("modelContextTesting is not available");
   }
-  return testing.executeTool(name, JSON.stringify(args));
+  return testing.executeTool(name, JSON.stringify(args), options);
 }
