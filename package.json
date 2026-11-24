@@ -13,6 +13,10 @@
     "test": "bun run --filter '@thegreataxios/webmcp-core' test && bun run --filter '@thegreataxios/webmcp-bridge' test && bun run --filter '@thegreataxios/webmcp-react' test && bun run --filter '@thegreataxios/webmcp' test",
     "typecheck": "bun run --filter '@thegreataxios/*' typecheck",
     "clean": "rm -rf packages/*/dist",
+    "arch:check": "cargo run -p arch-lint -- check",
+    "rust:test": "cargo test --workspace",
+    "rust:clippy": "cargo clippy --workspace --all-targets -- -D warnings",
+    "rust:build": "cargo build --release -p webmcp-bridge",
     "release": "bun scripts/release.ts"
   },
   "devDependencies": {
