@@ -317,6 +317,27 @@ export function listBridgeToolSummaries(): BridgeToolSummary[] {
   return filterExposedTools(installedRegistry);
 }
 
+/**
+ * Async bridge tool listing that works across native `document.modelContext`,
+ * `@w3c/webmcp-polyfill`, and the fallback registry.
+ */
+export async function listBridgeToolSummariesAsync(): Promise<BridgeToolSummary[]> {
+  if (typeof document !== "undefined" && document.modelContext?.getTools) {
+    const tools = await document.modelContext.getTools();
+    return tools
+      .filter((t) => (!journeyRegistry ? true : journeyRegistry.isToolExposed(t.name)))
+      .map((t) => ({
+        name: t.name,
+        title: t.title || undefined,
+        description: t.description,
+        inputSchema: (t.inputSchema ?? undefined) as BridgeToolSummary["inputSchema"],
+        outputSchema: (t.outputSchema ?? undefined) as BridgeToolSummary["outputSchema"],
+        annotations: t.annotations ?? undefined,
+      }));
+  }
+  return listBridgeToolSummaries();
+}
+
 export async function executeToolForBridge(
   name: string,
   args: Record<string, unknown>,

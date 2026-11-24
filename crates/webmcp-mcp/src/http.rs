@@ -1,12 +1,13 @@
-//! MCP Streamable HTTP transport (`POST /mcp`).
+//! MCP Streamable HTTP transport (`POST /mcp`) with Origin header enforcement.
 
 use std::sync::Arc;
 
 use axum::Router;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::post;
+use webmcp_policy::is_origin_allowed;
 use webmcp_protocol::BridgeHub;
 
 use crate::jsonrpc::{McpServerInfo, handle_jsonrpc_request};
@@ -15,16 +16,35 @@ use crate::jsonrpc::{McpServerInfo, handle_jsonrpc_request};
 struct HttpMcpState {
     hub: Arc<dyn BridgeHub>,
     info: McpServerInfo,
+    allowed_origins: Arc<Vec<String>>,
 }
 
 /// Build an Axum router exposing MCP Streamable HTTP at `POST /mcp`.
-pub fn build_mcp_http_router(hub: Arc<dyn BridgeHub>, info: McpServerInfo) -> Router {
+/// Enforces localhost / allowlisted `Origin` checks per MCP 2025-03-26 security guidance.
+pub fn build_mcp_http_router(
+    hub: Arc<dyn BridgeHub>,
+    info: McpServerInfo,
+    allowed_origins: Vec<String>,
+) -> Router {
     Router::new()
         .route("/mcp", post(handle_mcp_post))
-        .with_state(HttpMcpState { hub, info })
+        .with_state(HttpMcpState {
+            hub,
+            info,
+            allowed_origins: Arc::new(allowed_origins),
+        })
 }
 
-async fn handle_mcp_post(State(state): State<HttpMcpState>, body: String) -> impl IntoResponse {
+async fn handle_mcp_post(
+    State(state): State<HttpMcpState>,
+    headers: HeaderMap,
+    body: String,
+) -> impl IntoResponse {
+    let origin = headers.get("origin").and_then(|v| v.to_str().ok());
+    if !is_origin_allowed(origin, &state.allowed_origins) {
+        return (StatusCode::FORBIDDEN, "Forbidden origin").into_response();
+    }
+
     match handle_jsonrpc_request(state.hub.as_ref(), &state.info, &body).await {
         Some(resp) => match serde_json::to_string(&resp) {
             Ok(json) => (
@@ -43,6 +63,7 @@ async fn handle_mcp_post(State(state): State<HttpMcpState>, body: String) -> imp
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+    use axum::http::HeaderValue;
     use serde_json::{Value, json};
     use webmcp_protocol::{BoxFuture, BridgeToolSummary, HubError};
 
@@ -51,7 +72,11 @@ mod tests {
         fn list_tools(&self) -> BoxFuture<'_, Vec<BridgeToolSummary>> {
             Box::pin(async { vec![] })
         }
-        fn execute_tool(&self, _name: String, _args: Value) -> BoxFuture<'_, Result<Value, HubError>> {
+        fn execute_tool(
+            &self,
+            _name: String,
+            _args: Value,
+        ) -> BoxFuture<'_, Result<Value, HubError>> {
             Box::pin(async { Err(HubError::NoPageConnected) })
         }
         fn wait_tools_changed(&self) -> BoxFuture<'_, ()> {
@@ -60,13 +85,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn http_mcp_returns_200_for_request_and_202_for_notification() {
+    async fn http_mcp_returns_200_for_request_202_for_notification_and_403_for_bad_origin() {
         let state = HttpMcpState {
             hub: Arc::new(EmptyHub),
             info: McpServerInfo::default(),
+            allowed_origins: Arc::new(vec![]),
         };
+
         let req_resp = handle_mcp_post(
             State(state.clone()),
+            HeaderMap::new(),
             json!({"jsonrpc": "2.0", "id": 1, "method": "ping"}).to_string(),
         )
         .await
@@ -74,11 +102,23 @@ mod tests {
         assert_eq!(req_resp.status(), StatusCode::OK);
 
         let notif_resp = handle_mcp_post(
-            State(state),
+            State(state.clone()),
+            HeaderMap::new(),
             json!({"jsonrpc": "2.0", "method": "notifications/initialized"}).to_string(),
         )
         .await
         .into_response();
         assert_eq!(notif_resp.status(), StatusCode::ACCEPTED);
+
+        let mut evil_headers = HeaderMap::new();
+        evil_headers.insert("origin", HeaderValue::from_static("https://evil.example"));
+        let evil_resp = handle_mcp_post(
+            State(state),
+            evil_headers,
+            json!({"jsonrpc": "2.0", "id": 2, "method": "ping"}).to_string(),
+        )
+        .await
+        .into_response();
+        assert_eq!(evil_resp.status(), StatusCode::FORBIDDEN);
     }
 }

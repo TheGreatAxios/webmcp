@@ -68,6 +68,7 @@ async fn main() {
         process::exit(2);
     }
 
+    let allowed_origins = config.allowed_origins.clone();
     let hub = PageSessionHub::new();
     let (addr, listener, ws_router) = match serve_ws(hub.clone(), config).await {
         Ok(parts) => parts,
@@ -81,7 +82,11 @@ async fn main() {
     let hub_dyn: Arc<dyn BridgeHub> = Arc::new(hub);
 
     let router = if cli.http_mcp {
-        ws_router.merge(build_mcp_http_router(Arc::clone(&hub_dyn), info.clone()))
+        ws_router.merge(build_mcp_http_router(
+            Arc::clone(&hub_dyn),
+            info.clone(),
+            allowed_origins,
+        ))
     } else {
         ws_router
     };

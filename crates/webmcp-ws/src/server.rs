@@ -90,9 +90,10 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
         return;
     }
 
-    // First message MUST be a valid Auth frame.
-    let authenticated = match stream.next().await {
-        Some(Ok(Message::Text(text))) => matches!(
+    // First message MUST be a valid Auth frame within 5 seconds.
+    let auth_frame = tokio::time::timeout(std::time::Duration::from_secs(5), stream.next()).await;
+    let authenticated = match auth_frame {
+        Ok(Some(Ok(Message::Text(text)))) => matches!(
             serde_json::from_str::<BridgeClientMessage>(&text),
             Ok(BridgeClientMessage::Auth { token }) if verify_token_ct(&token, &state.config.token)
         ),
@@ -121,7 +122,7 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
     }
 
     let (tx, mut rx) = mpsc::unbounded_channel::<BridgeServerMessage>();
-    state.hub.attach(tx).await;
+    let session_id = state.hub.attach(tx).await;
 
     let writer = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -144,7 +145,7 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
     }
 
     writer.abort();
-    state.hub.detach().await;
+    state.hub.detach(session_id).await;
 }
 
 /// Helper re-export so callers can check config errors cleanly.
