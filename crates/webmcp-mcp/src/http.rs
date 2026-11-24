@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use axum::Router;
-use axum::extract::State;
+use axum::extract::{DefaultBodyLimit, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::post;
@@ -11,6 +11,8 @@ use webmcp_policy::is_origin_allowed;
 use webmcp_protocol::BridgeHub;
 
 use crate::jsonrpc::{McpServerInfo, handle_jsonrpc_request};
+
+const MAX_HTTP_BODY_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone)]
 struct HttpMcpState {
@@ -20,7 +22,7 @@ struct HttpMcpState {
 }
 
 /// Build an Axum router exposing MCP Streamable HTTP at `POST /mcp`.
-/// Enforces localhost / allowlisted `Origin` checks per MCP 2025-03-26 security guidance.
+/// Enforces localhost / allowlisted `Origin` checks and a 1 MiB body limit per MCP 2025-03-26 security guidance.
 pub fn build_mcp_http_router(
     hub: Arc<dyn BridgeHub>,
     info: McpServerInfo,
@@ -28,6 +30,7 @@ pub fn build_mcp_http_router(
 ) -> Router {
     Router::new()
         .route("/mcp", post(handle_mcp_post))
+        .layer(DefaultBodyLimit::max(MAX_HTTP_BODY_BYTES))
         .with_state(HttpMcpState {
             hub,
             info,
@@ -47,12 +50,9 @@ async fn handle_mcp_post(
 
     match handle_jsonrpc_request(state.hub.as_ref(), &state.info, &body).await {
         Some(resp) => match serde_json::to_string(&resp) {
-            Ok(json) => (
-                StatusCode::OK,
-                [("content-type", "application/json")],
-                json,
-            )
-                .into_response(),
+            Ok(json) => {
+                (StatusCode::OK, [("content-type", "application/json")], json).into_response()
+            }
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         },
         None => StatusCode::ACCEPTED.into_response(),

@@ -3,24 +3,32 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import type { CallToolResult } from "@thegreataxios/webmcp-core";
+import type {
+  CallToolResult,
+  JsonSchema,
+  ToolAnnotations,
+  ToolExecuteCallbackOptions,
+} from "@thegreataxios/webmcp-core";
 import { WebMCPTool } from "../provider";
 
 export interface PendingConfirmation {
-  tool: string;
-  args: Record<string, unknown>;
-  approve: () => void;
-  reject: (reason?: string) => void;
+  readonly tool: string;
+  readonly args: Record<string, unknown>;
+  readonly approve: () => void;
+  readonly reject: (reason?: string) => void;
 }
 
-const ConfirmContext = createContext<{
-  pending: PendingConfirmation | null;
-  request: (tool: string, args: Record<string, unknown>) => Promise<boolean>;
-} | null>(null);
+interface ConfirmContextValue {
+  readonly pending: PendingConfirmation | null;
+  readonly request: (tool: string, args: Record<string, unknown>) => Promise<boolean>;
+}
+
+const ConfirmContext = createContext<ConfirmContextValue | null>(null);
 
 export function experimental_WebMCPConfirmProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<PendingConfirmation | null>(null);
@@ -32,9 +40,8 @@ export function experimental_WebMCPConfirmProvider({ children }: { children: Rea
     }>
   >([]);
   const mountedRef = useRef(true);
-  const showNextRef = useRef<() => void>(() => {});
 
-  showNextRef.current = () => {
+  const showNext = useCallback(() => {
     const next = queueRef.current[0];
     if (!next || !mountedRef.current) {
       setPending(null);
@@ -46,7 +53,7 @@ export function experimental_WebMCPConfirmProvider({ children }: { children: Rea
       next.resolve(approved);
       if (mountedRef.current) {
         setPending(null);
-        queueMicrotask(() => showNextRef.current());
+        queueMicrotask(() => showNext());
       }
     };
     setPending({
@@ -55,18 +62,21 @@ export function experimental_WebMCPConfirmProvider({ children }: { children: Rea
       approve: () => settle(true),
       reject: () => settle(false),
     });
-  };
-
-  const request = useCallback((tool: string, args: Record<string, unknown>) => {
-    return new Promise<boolean>((resolve) => {
-      if (!mountedRef.current) {
-        resolve(false);
-        return;
-      }
-      queueRef.current.push({ tool, args, resolve });
-      if (queueRef.current.length === 1) showNextRef.current();
-    });
   }, []);
+
+  const request = useCallback(
+    (tool: string, args: Record<string, unknown>) => {
+      return new Promise<boolean>((resolve) => {
+        if (!mountedRef.current) {
+          resolve(false);
+          return;
+        }
+        queueRef.current.push({ tool, args, resolve });
+        if (queueRef.current.length === 1) showNext();
+      });
+    },
+    [showNext],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -76,11 +86,12 @@ export function experimental_WebMCPConfirmProvider({ children }: { children: Rea
     };
   }, []);
 
-  return (
-    <ConfirmContext.Provider value={{ pending, request }}>
-      {children}
-    </ConfirmContext.Provider>
+  const contextValue = useMemo<ConfirmContextValue>(
+    () => ({ pending, request }),
+    [pending, request],
   );
+
+  return <ConfirmContext.Provider value={contextValue}>{children}</ConfirmContext.Provider>;
 }
 
 export function experimental_useWebMCPConfirm() {
@@ -93,17 +104,28 @@ export function experimental_useWebMCPConfirm() {
 
 export interface GuardedToolProps {
   name: string;
+  title?: string;
   description: string;
-  inputSchema?: Record<string, unknown>;
+  inputSchema?: JsonSchema;
+  outputSchema?: JsonSchema;
+  annotations?: ToolAnnotations;
+  exposedTo?: string[];
   requiresConfirm?: boolean;
-  handler: (args: Record<string, unknown>) => CallToolResult | Promise<CallToolResult>;
+  handler: (
+    args: Record<string, unknown>,
+    options?: ToolExecuteCallbackOptions,
+  ) => CallToolResult | unknown | Promise<CallToolResult | unknown>;
 }
 
 /** experimental — wraps WebMCPTool with optional confirmation gate */
 export function experimental_WebMCPGuardedTool({
   name,
+  title,
   description,
   inputSchema,
+  outputSchema,
+  annotations,
+  exposedTo,
   requiresConfirm = true,
   handler,
 }: GuardedToolProps) {
@@ -112,9 +134,13 @@ export function experimental_WebMCPGuardedTool({
   return (
     <WebMCPTool
       name={name}
+      title={title}
       description={description}
       inputSchema={inputSchema}
-      handler={async (args) => {
+      outputSchema={outputSchema}
+      annotations={annotations}
+      exposedTo={exposedTo}
+      handler={async (args, options) => {
         if (requiresConfirm && !requestConfirmation) {
           return {
             content: [{ type: "text", text: "Confirmation provider unavailable" }],
@@ -123,6 +149,9 @@ export function experimental_WebMCPGuardedTool({
         }
         if (requiresConfirm) {
           const approved = await requestConfirmation!(name, args);
+          if (options?.signal?.aborted) {
+            throw options.signal.reason ?? new DOMException("Aborted", "AbortError");
+          }
           if (!approved) {
             return {
               content: [{ type: "text", text: "User declined" }],
@@ -130,7 +159,7 @@ export function experimental_WebMCPGuardedTool({
             };
           }
         }
-        return await handler(args);
+        return await handler(args, options);
       }}
     />
   );

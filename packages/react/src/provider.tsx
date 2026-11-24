@@ -126,7 +126,9 @@ export function WebMCPTool({
 }: WebMCPToolProps) {
   const { available } = useWebMCP();
   const handlerRef = useRef(handler);
-  handlerRef.current = handler;
+  useLayoutEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
 
   const schemaKey = useMemo(
     () => JSON.stringify({ inputSchema, outputSchema, annotations, title, exposedTo }),

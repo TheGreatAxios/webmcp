@@ -25,6 +25,7 @@ let polyfillCount = 0;
 let installedRegistry: ToolRegistry | null = null;
 let journeyRegistry: JourneyRegistry | null = null;
 let usedW3cPolyfill = false;
+let w3cPolyfillInstalled = false;
 const stabilityPromises = new Set<Promise<unknown>>();
 
 export function awaitToolsStable(): Promise<void> {
@@ -256,7 +257,7 @@ function createTestingShim(registry: ToolRegistry): ModelContextTesting {
 
 export function isNativeModelContext(): boolean {
   if (typeof document === "undefined") return false;
-  if (usedW3cPolyfill) return false;
+  if (usedW3cPolyfill || w3cPolyfillInstalled) return false;
   const mc = document.modelContext as WebMCPPolyfillMarker | undefined;
   return mc != null && mc[POLYFILL_MARKER] !== true;
 }
@@ -273,11 +274,14 @@ export function installPolyfill(): boolean {
   // Prefer the official @w3c/webmcp-polyfill in real secure browser contexts when
   // no modelContext exists yet; fall back to our spec-aligned implementation in
   // non-secure / test DOM environments.
-  if (globalThis.isSecureContext && !("modelContext" in document)) {
+  if (globalThis.isSecureContext && (!("modelContext" in document) || w3cPolyfillInstalled)) {
     try {
-      installWebMCP();
+      if (!w3cPolyfillInstalled) {
+        installWebMCP();
+      }
       if ("modelContext" in document && document.modelContext) {
         usedW3cPolyfill = true;
+        w3cPolyfillInstalled = true;
         const mc = document.modelContext;
         if (typeof mc.waitForToolsUntil !== "function") {
           Object.defineProperty(mc, "waitForToolsUntil", {

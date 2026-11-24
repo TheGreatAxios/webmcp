@@ -9,10 +9,7 @@ use webmcp_protocol::BridgeHub;
 use crate::jsonrpc::{McpServerInfo, handle_jsonrpc_request, tools_list_changed_notification};
 
 /// Run the stdio MCP server until stdin reaches EOF.
-pub async fn run_stdio_server(
-    hub: Arc<dyn BridgeHub>,
-    info: McpServerInfo,
-) -> std::io::Result<()> {
+pub async fn run_stdio_server(hub: Arc<dyn BridgeHub>, info: McpServerInfo) -> std::io::Result<()> {
     let stdout = Arc::new(Mutex::new(tokio::io::stdout()));
 
     // Background task pushing `notifications/tools/list_changed` when the page updates tools.

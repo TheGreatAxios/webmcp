@@ -18,6 +18,8 @@ use webmcp_protocol::{BridgeClientMessage, BridgeServerMessage};
 
 use crate::session::PageSessionHub;
 
+const MAX_WS_FRAME_BYTES: usize = 1024 * 1024;
+
 #[derive(Clone)]
 struct WsState {
     hub: PageSessionHub,
@@ -122,7 +124,7 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
     }
 
     let (tx, mut rx) = mpsc::unbounded_channel::<BridgeServerMessage>();
-    let session_id = state.hub.attach(tx).await;
+    let session_id = state.hub.attach(tx.clone()).await;
 
     let writer = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -135,6 +137,12 @@ async fn handle_socket(socket: WebSocket, state: WsState) {
     while let Some(Ok(frame)) = stream.next().await {
         match frame {
             Message::Text(text) => {
+                if text.len() > MAX_WS_FRAME_BYTES {
+                    let _ = tx.send(BridgeServerMessage::Error {
+                        message: "Message too large".into(),
+                    });
+                    break;
+                }
                 if let Ok(parsed) = serde_json::from_str::<BridgeClientMessage>(&text) {
                     state.hub.handle_authenticated_message(parsed).await;
                 }
@@ -179,7 +187,9 @@ mod tests {
         });
 
         let url = format!("ws://{addr}/ws");
-        let (mut ws, _) = tokio_tungstenite::connect_async(&url).await.expect("connect");
+        let (mut ws, _) = tokio_tungstenite::connect_async(&url)
+            .await
+            .expect("connect");
 
         // Expect auth_required
         let first = ws.next().await.expect("msg").expect("ok");
@@ -221,9 +231,10 @@ mod tests {
 
         // Execute tool from hub while page responds
         let hub_exec = hub.clone();
-        let exec_task = tokio::spawn(async move {
-            hub_exec.execute_tool("ping".into(), json!({"x": 1})).await
-        });
+        let exec_task =
+            tokio::spawn(
+                async move { hub_exec.execute_tool("ping".into(), json!({"x": 1})).await },
+            );
 
         let req_frame = ws.next().await.expect("exec frame").expect("ok");
         let req_msg: BridgeServerMessage =
@@ -261,7 +272,9 @@ mod tests {
             let _ = axum::serve(listener, router).await;
         });
 
-        let mut req = format!("ws://{addr}/ws").into_client_request().expect("req");
+        let mut req = format!("ws://{addr}/ws")
+            .into_client_request()
+            .expect("req");
         req.headers_mut()
             .insert("Origin", "https://evil.example".parse().expect("hdr"));
 
@@ -270,6 +283,37 @@ mod tests {
             .expect_err("should reject forbidden origin");
         assert!(err.to_string().contains("403"));
 
+        server_task.abort();
+    }
+
+    #[tokio::test]
+    async fn rejects_invalid_token_and_never_accepts_unauthenticated_tools() {
+        let hub = PageSessionHub::new();
+        let cfg = test_config();
+        let (addr, listener, router) = serve_ws(hub.clone(), cfg).await.expect("serve");
+        let server_task = tokio::spawn(async move {
+            let _ = axum::serve(listener, router).await;
+        });
+
+        let url = format!("ws://{addr}/ws");
+        let (mut ws, _) = tokio_tungstenite::connect_async(&url)
+            .await
+            .expect("connect");
+
+        let _auth_req = ws.next().await.expect("auth_required").expect("ok");
+
+        let bad_auth = serde_json::to_string(&BridgeClientMessage::Auth {
+            token: "wrong-token-value-0000000000000000".into(),
+        })
+        .expect("ser");
+        ws.send(TMsg::Text(bad_auth.into())).await.expect("send");
+
+        let err_frame = ws.next().await.expect("err frame").expect("ok");
+        let msg: BridgeServerMessage =
+            serde_json::from_str(err_frame.to_text().expect("text")).expect("parse");
+        assert!(matches!(msg, BridgeServerMessage::Error { .. }));
+
+        assert!(hub.list_tools().await.is_empty());
         server_task.abort();
     }
 }
