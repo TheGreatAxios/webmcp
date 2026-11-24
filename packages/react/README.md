@@ -1,6 +1,6 @@
 # @thegreataxios/webmcp-react
 
-React bindings for WebMCP. **Providers define tools; hooks consume context.**
+React 18+ bindings for the [W3C WebMCP](https://github.com/webmachinelearning/webmcp) API. **Providers define tools; hooks consume context.**
 
 ## Install
 
@@ -8,114 +8,69 @@ React bindings for WebMCP. **Providers define tools; hooks consume context.**
 bun add @thegreataxios/webmcp-react @thegreataxios/webmcp-core
 ```
 
-Peer: `react` ≥ 18.
-
-## Quick start
+## Quick Start
 
 ```tsx
-import {
-  WebMCPProvider,
-  WebMCPTool,
-  experimental_useWebMCPSync,
-} from "@thegreataxios/webmcp-react";
+import { WebMCPProvider, WebMCPTool } from "@thegreataxios/webmcp-react";
 
-function App() {
-  const cart = experimental_useWebMCPSync({
-    initial: { items: [] as string[] },
-    tools: {
-      add_to_cart: {
-        description: "Add a SKU to the cart",
-        inputSchema: {
-          type: "object",
-          properties: { sku: { type: "string" } },
-          required: ["sku"],
-        },
-        reducer: (cart, { sku }) => ({
-          ...cart,
-          items: [...cart.items, String(sku)],
-        }),
-      },
-    },
-  });
-
+export function App() {
   return (
     <WebMCPProvider name="shop" version="1.0.0">
-      {cart.Tools}
       <WebMCPTool
         name="search"
-        description="Search products"
+        title="Search Products"
+        description="Search the product catalog"
         inputSchema={{
           type: "object",
           properties: { q: { type: "string" } },
+          required: ["q"],
         }}
-        handler={async ({ q }) => ({
-          content: [{ type: "text", text: `Results for ${q}` }],
-        })}
+        outputSchema={{
+          type: "object",
+          properties: { results: { type: "array" } },
+        }}
+        annotations={{ readOnlyHint: true }}
+        handler={async ({ q }, options) => {
+          const res = await fetch(`/api/search?q=${encodeURIComponent(String(q))}`, {
+            signal: options?.signal,
+          });
+          return res.json();
+        }}
       />
-      <pre>{JSON.stringify(cart.state)}</pre>
     </WebMCPProvider>
   );
 }
 ```
 
-## Stable exports
+## Stable Exports
 
 | Export | Role |
-|--------|------|
-| `WebMCPProvider` | Installs polyfill, journey registry |
-| `WebMCPTool` | Declares one tool (StrictMode-safe) |
-| `useWebMCP()` | `{ available, native, appName, journeyRegistry }` |
+|---|---|
+| `WebMCPProvider` | Installs polyfill & manages journey registry lifecycle |
+| `WebMCPTool` | Registers a single tool (StrictMode-safe, supports `outputSchema`, `annotations`, `exposedTo`, and `options.signal`) |
+| `useWebMCP()` | Returns `{ available, native, appName, appVersion, journeyRegistry }` |
+| `useWaitForToolsUntil(promise)` | Signals async tool stability to `document.modelContext.waitForToolsUntil` |
 
-## Experimental exports
+## Experimental Exports
 
-React requires component names to start with an uppercase letter in JSX. Alias `experimental_*` exports:
+React JSX requires uppercase component identifiers, so alias `experimental_*` components when importing:
 
 ```tsx
 import {
-  experimental_WebMCPJourney as Journey,
+  experimental_WebMCPBridgeProvider as BridgeProvider,
   experimental_WebMCPConfirmProvider as ConfirmProvider,
+  experimental_WebMCPGuardedTool as GuardedTool,
+  experimental_WebMCPJourney as Journey,
+  experimental_useWebMCPSync,
 } from "@thegreataxios/webmcp-react";
 ```
 
 | Export | Role |
-|--------|------|
-| `experimental_useWebMCPSync` | Agent calls → React state updates |
-| `experimental_WebMCPJourney` | Phase-scoped tool visibility |
-| `experimental_useWebMCPJourney` | Read active journeys / `isToolExposed` |
-| `experimental_WebMCPConfirmProvider` | HITL confirmation queue |
-| `experimental_WebMCPGuardedTool` | Tool that requires user approval |
-| `experimental_WebMCPBridgeProvider` | Page ↔ `webmcp-bridge` WebSocket |
-| `experimental_useWebMCPBridgeStatus` | Bridge connection status |
-
-Experimental APIs may change without a major stable semver bump.
-
-## Journeys
-
-React requires component names to start with an uppercase letter in JSX. Alias `experimental_*` exports:
-
-```tsx
-import { experimental_WebMCPJourney as Journey } from "@thegreataxios/webmcp-react";
-
-<Journey name="buying" tools={["search", "add_to_cart"]}>
-  <WebMCPTool name="search" ... />
-  <WebMCPTool name="add_to_cart" ... />
-</Journey>
-```
-
-Checkout tools stay unregistered for agents until a checkout journey is active.
-
-## Cursor / Claude (no extension)
-
-```tsx
-<experimental_WebMCPBridgeProvider token={bridgeToken}>
-  <WebMCPProvider name="shop" version="1.0.0">
-    ...
-  </WebMCPProvider>
-</experimental_WebMCPBridgeProvider>
-```
-
-Configure Cursor to launch `webmcp-bridge` with a fixed
-`WEBMCP_BRIDGE_TOKEN`, then pass that same token to the page.
+|---|---|
+| `experimental_useWebMCPSync` | Agent tool calls → React state reducer updates |
+| `experimental_WebMCPJourney` / `experimental_useWebMCPJourney` | Phase-scoped tool visibility |
+| `experimental_WebMCPConfirmProvider` / `experimental_WebMCPGuardedTool` / `experimental_useWebMCPConfirm` | Human-in-the-loop confirmation gate |
+| `experimental_WebMCPBridgeProvider` / `experimental_useWebMCPBridgeStatus` | Connect page to `webmcp-bridge` WebSocket |
 
 ## License
 
