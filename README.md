@@ -46,9 +46,12 @@ Off-Browser Bridge (Rust L1 / L2 / L3 workspace, enforced by arch-lint)
 | Package | Description |
 |---|---|
 | [`@thegreataxios/webmcp-core`](./packages/core) | `document.modelContext` wrapper, validation, events, origin policy, journeys, page bridge client |
+| [`@thegreataxios/webmcp-elements`](./packages/elements) | Framework-agnostic Web Components (`<webmcp-provider>`, `<webmcp-tool>`, `<webmcp-journey>`) |
 | [`@thegreataxios/webmcp-react`](./packages/react) | React provider, `<WebMCPTool>`, `useWaitForToolsUntil`, state sync, journeys, HITL confirm |
+| [`@thegreataxios/webmcp-svelte`](./packages/svelte) | Svelte 4/5 bindings (`createWebMCPProvider`, `useWebMCPTool`, reactive stores) |
+| [`@thegreataxios/webmcp-vue`](./packages/vue) | Vue 3 Composition API & plugin (`createWebMCPPlugin`, `provideWebMCP`, `useWebMCPTool`) |
 | [`@thegreataxios/webmcp-bridge`](./packages/bridge) | Localhost WebSocket ↔ MCP bridge (TypeScript library + CLI) |
-| [`@thegreataxios/webmcp`](./packages/webmcp) | Umbrella re-exports (`/react`, `/bridge` subpaths) |
+| [`@thegreataxios/webmcp`](./packages/webmcp) | Umbrella re-exports (`/elements`, `/react`, `/svelte`, `/vue`, `/bridge`) |
 
 ### Rust workspace (`Cargo.toml`)
 

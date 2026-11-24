@@ -32,6 +32,11 @@
       "import": "./dist/svelte.js",
       "require": "./dist/svelte.cjs"
     },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js",
+      "require": "./dist/vue.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -62,6 +67,7 @@
     "@thegreataxios/webmcp-core": "workspace:*",
     "@thegreataxios/webmcp-elements": "workspace:*",
     "@thegreataxios/webmcp-svelte": "workspace:*",
+    "@thegreataxios/webmcp-vue": "workspace:*",
     "@thegreataxios/webmcp-react": "workspace:*",
     "@thegreataxios/webmcp-bridge": "workspace:*"
   }
