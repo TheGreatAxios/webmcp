@@ -1,13 +1,14 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/react.ts", "src/bridge.ts"],
+  entry: ["src/index.ts", "src/react.ts", "src/bridge.ts", "src/elements.ts"],
   format: ["esm", "cjs"],
   dts: true,
   clean: true,
   sourcemap: true,
   external: [
     "@thegreataxios/webmcp-core",
+    "@thegreataxios/webmcp-elements",
     "@thegreataxios/webmcp-react",
     "@thegreataxios/webmcp-bridge",
     "react",

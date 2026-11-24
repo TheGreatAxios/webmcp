@@ -1,0 +1,47 @@
+{
+  "name": "@thegreataxios/webmcp-elements",
+  "version": "0.1.1",
+  "description": "Framework-agnostic Web Components (<webmcp-provider>, <webmcp-tool>, <webmcp-journey>) for W3C WebMCP",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "keywords": [
+    "webmcp",
+    "web-components",
+    "custom-elements",
+    "document.modelContext"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheGreatAxios/webmcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@thegreataxios/webmcp-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.0.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -22,6 +22,11 @@
       "import": "./dist/bridge.js",
       "require": "./dist/bridge.cjs"
     },
+    "./elements": {
+      "types": "./dist/elements.d.ts",
+      "import": "./dist/elements.js",
+      "require": "./dist/elements.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -50,6 +55,7 @@
   },
   "dependencies": {
     "@thegreataxios/webmcp-core": "workspace:*",
+    "@thegreataxios/webmcp-elements": "workspace:*",
     "@thegreataxios/webmcp-react": "workspace:*",
     "@thegreataxios/webmcp-bridge": "workspace:*"
   }
