@@ -206,14 +206,22 @@ function createTestingShim(registry: ToolRegistry): ModelContextTesting {
           "NotFoundError",
         );
       }
-      const tool = registry.getTool(toolName);
-      if (!tool) {
-        throw new DOMException(`Tool "${toolName}" not found`, "NotFoundError");
-      }
       if (options?.signal?.aborted) {
         throw new DOMException("Tool execution was aborted", "AbortError");
       }
       const parsed = parseToolArgsJson(inputArgsJson);
+      if (usedW3cPolyfill && typeof document !== "undefined" && document.modelContext?.getTools) {
+        const tools = await document.modelContext.getTools();
+        const match = tools.find((t) => t.name === toolName);
+        if (!match) {
+          throw new DOMException(`Tool "${toolName}" not found`, "NotFoundError");
+        }
+        return document.modelContext.executeTool(match, parsed, options);
+      }
+      const tool = registry.getTool(toolName);
+      if (!tool) {
+        throw new DOMException(`Tool "${toolName}" not found`, "NotFoundError");
+      }
       const controller = new AbortController();
       const onAbort = () => controller.abort(options?.signal?.reason);
       options?.signal?.addEventListener("abort", onAbort, { once: true });
@@ -228,9 +236,16 @@ function createTestingShim(registry: ToolRegistry): ModelContextTesting {
       offChange?.();
       const offRegistry = registry.addChangeListener(callback);
       const offJourney = journeyRegistry?.addChangeListener(callback);
+      const onToolChange = () => callback();
+      if (usedW3cPolyfill && typeof document !== "undefined" && document.modelContext) {
+        document.modelContext.addEventListener("toolchange", onToolChange);
+      }
       offChange = () => {
         offRegistry();
         offJourney?.();
+        if (usedW3cPolyfill && typeof document !== "undefined" && document.modelContext) {
+          document.modelContext.removeEventListener("toolchange", onToolChange);
+        }
       };
     },
     getCrossDocumentScriptToolResult() {
@@ -263,12 +278,25 @@ export function installPolyfill(): boolean {
       installWebMCP();
       if ("modelContext" in document && document.modelContext) {
         usedW3cPolyfill = true;
-        if (typeof document.modelContext.waitForToolsUntil !== "function") {
-          Object.defineProperty(document.modelContext, "waitForToolsUntil", {
+        const mc = document.modelContext;
+        if (typeof mc.waitForToolsUntil !== "function") {
+          Object.defineProperty(mc, "waitForToolsUntil", {
             configurable: true,
             value: trackStabilityPromise,
           });
         }
+        // Mirror registerTool metadata into installedRegistry so synchronous
+        // navigator.modelContextTesting.listTools() and listBridgeToolSummaries()
+        // stay in sync with @w3c/webmcp-polyfill.
+        const origRegisterTool = mc.registerTool.bind(mc);
+        const registry = installedRegistry;
+        Object.defineProperty(mc, "registerTool", {
+          configurable: true,
+          value: async (tool: ToolDescriptor, options?: RegisterToolOptions) => {
+            await origRegisterTool(tool as never, options);
+            await registry.register(tool, options).catch(() => {});
+          },
+        });
       }
     } catch {
       usedW3cPolyfill = false;
