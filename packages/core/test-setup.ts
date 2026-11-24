@@ -91,7 +91,10 @@ if (typeof globalThis.document === "undefined") {
     set modelContext(value: unknown) {
       documentProps.modelContext = value;
     },
-  } as Document;
+    createElement() {
+      return {};
+    },
+  } as unknown as Document;
 }
 if (typeof globalThis.navigator === "undefined") {
   (globalThis as { navigator: Navigator }).navigator = {

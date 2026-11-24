@@ -16,8 +16,13 @@ const DEFAULT_TOOL_TIMEOUT: Duration = Duration::from_secs(60);
 
 type PendingSender = oneshot::Sender<Result<Value, HubError>>;
 
+struct ActiveSession {
+    id: Uuid,
+    tx: mpsc::UnboundedSender<BridgeServerMessage>,
+}
+
 struct SessionInner {
-    outbound: RwLock<Option<mpsc::UnboundedSender<BridgeServerMessage>>>,
+    outbound: RwLock<Option<ActiveSession>>,
     tools: RwLock<Vec<BridgeToolSummary>>,
     pending: Mutex<HashMap<String, PendingSender>>,
     tools_changed: Notify,
@@ -53,17 +58,28 @@ impl PageSessionHub {
         }
     }
 
-    /// Attach an authenticated page WebSocket outbound channel.
-    pub async fn attach(&self, tx: mpsc::UnboundedSender<BridgeServerMessage>) {
+    /// Attach an authenticated page WebSocket outbound channel and return its session ID.
+    pub async fn attach(&self, tx: mpsc::UnboundedSender<BridgeServerMessage>) -> Uuid {
+        let id = Uuid::new_v4();
         let mut guard = self.inner.outbound.write().await;
-        *guard = Some(tx);
+        *guard = Some(ActiveSession { id, tx });
+        id
     }
 
-    /// Detach the current page WebSocket, clear tools, and fail all pending tool calls.
-    pub async fn detach(&self) {
-        {
+    /// Detach only if `session_id` matches the currently active session.
+    /// Prevents a stale closing browser tab from clobbering a newly connected tab.
+    pub async fn detach(&self, session_id: Uuid) {
+        let should_clear = {
             let mut guard = self.inner.outbound.write().await;
-            *guard = None;
+            if guard.as_ref().is_some_and(|s| s.id == session_id) {
+                *guard = None;
+                true
+            } else {
+                false
+            }
+        };
+        if !should_clear {
+            return;
         }
         self.set_tools(Vec::new()).await;
 
@@ -99,7 +115,7 @@ impl PageSessionHub {
 
     /// Request cancellation of an in-flight tool call on the connected page.
     pub async fn cancel_tool(&self, id: String) {
-        let outbound = self.inner.outbound.read().await.clone();
+        let outbound = self.inner.outbound.read().await.as_ref().map(|s| s.tx.clone());
         if let Some(tx) = outbound {
             let _ = tx.send(BridgeServerMessage::CancelTool { id });
         }
@@ -133,7 +149,8 @@ impl BridgeHub for PageSessionHub {
                 .outbound
                 .read()
                 .await
-                .clone()
+                .as_ref()
+                .map(|s| s.tx.clone())
                 .ok_or(HubError::NoPageConnected)?;
 
             let id = Uuid::new_v4().to_string();

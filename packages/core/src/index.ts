@@ -32,6 +32,7 @@ export {
   installPolyfill,
   isNativeModelContext,
   listBridgeToolSummaries,
+  listBridgeToolSummariesAsync,
   setJourneyRegistry,
 } from "./polyfill";
 

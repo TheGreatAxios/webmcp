@@ -1,5 +1,5 @@
 import type { BridgeClientMessage, BridgeServerMessage, BridgeToolSummary } from "../types";
-import { listBridgeToolSummaries, executeToolForBridge } from "../polyfill";
+import { listBridgeToolSummariesAsync, executeToolForBridge } from "../polyfill";
 
 export interface PageBridgeClientOptions {
   url: string;
@@ -35,9 +35,10 @@ export function createPageBridgeClient(options: PageBridgeClientOptions): {
     inflight.clear();
   };
 
-  const syncTools = () => {
+  const syncTools = async () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const tools: BridgeToolSummary[] = listBridgeToolSummaries();
+    const tools: BridgeToolSummary[] = await listBridgeToolSummariesAsync();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const msg: BridgeClientMessage = { type: "sync_tools", tools };
     ws.send(JSON.stringify(msg));
   };
