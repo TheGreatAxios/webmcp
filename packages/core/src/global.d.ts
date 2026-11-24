@@ -23,10 +23,10 @@ export interface ModelContext extends EventTarget {
 }
 
 declare global {
-  interface Document {
-    readonly modelContext?: WebMCP.ModelContext & {
+  namespace WebMCP {
+    interface ModelContext {
       waitForToolsUntil?(promise: Promise<unknown>): void;
-    };
+    }
   }
   interface Navigator {
     modelContextTesting?: ModelContextTesting;

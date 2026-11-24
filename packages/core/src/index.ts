@@ -24,6 +24,7 @@ export type {
 
 export { createToolRegistry, type ToolRegistry } from "./registry";
 export {
+  awaitToolsStable,
   cleanupPolyfill,
   executeToolForBridge,
   getJourneyRegistry,
@@ -33,6 +34,8 @@ export {
   listBridgeToolSummaries,
   setJourneyRegistry,
 } from "./polyfill";
+
+export { WebMCPToolActivatedEvent, WebMCPToolCancelEvent } from "./events";
 
 export { createPageBridgeClient, type PageBridgeClientOptions, type PageBridgeStatus } from "./bridge/page-client";
 
