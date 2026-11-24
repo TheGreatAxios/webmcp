@@ -134,7 +134,7 @@
     },
     "packages/bridge": {
       "name": "@thegreataxios/webmcp-bridge",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "webmcp-bridge": "./dist/cli.js",
       },
@@ -145,11 +145,14 @@
     },
     "packages/core": {
       "name": "@thegreataxios/webmcp-core",
-      "version": "0.1.0",
+      "version": "0.1.1",
+      "dependencies": {
+        "@w3c/webmcp-polyfill": "^0.2.0",
+      },
     },
     "packages/react": {
       "name": "@thegreataxios/webmcp-react",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@thegreataxios/webmcp-core": "workspace:*",
       },
@@ -169,7 +172,7 @@
     },
     "packages/webmcp": {
       "name": "@thegreataxios/webmcp",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@thegreataxios/webmcp-bridge": "workspace:*",
         "@thegreataxios/webmcp-core": "workspace:*",
@@ -393,6 +396,8 @@
     "@types/ws": ["@types/ws@8.18.1", "", { "dependencies": { "@types/node": "*" } }, "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg=="],
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@4.7.0", "", { "dependencies": { "@babel/core": "^7.28.0", "@babel/plugin-transform-react-jsx-self": "^7.27.1", "@babel/plugin-transform-react-jsx-source": "^7.27.1", "@rolldown/pluginutils": "1.0.0-beta.27", "@types/babel__core": "^7.20.5", "react-refresh": "^0.17.0" }, "peerDependencies": { "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0" } }, "sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA=="],
+
+    "@w3c/webmcp-polyfill": ["@w3c/webmcp-polyfill@0.2.0", "", { "dependencies": { "webmcp-types": "^0.2.0" } }, "sha512-L1ZbvOuqD4zNpmwJn5YbFwAi+7hI2duqlfdDqftZcFkEPcN/nfnFCYuxPcmvCVdw9OSjQ+EZGiwkn9OgDOo3+A=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
 
@@ -713,6 +718,8 @@
     "vary": ["vary@1.1.2", "", {}, "sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg=="],
 
     "vite": ["vite@6.4.3", "", { "dependencies": { "esbuild": "^0.25.0", "fdir": "^6.4.4", "picomatch": "^4.0.2", "postcss": "^8.5.3", "rollup": "^4.34.9", "tinyglobby": "^0.2.13" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^18.0.0 || ^20.0.0 || >=22.0.0", "jiti": ">=1.21.0", "less": "*", "lightningcss": "^1.21.0", "sass": "*", "sass-embedded": "*", "stylus": "*", "sugarss": "*", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-NTKlcQjlAK7MlQoyb6LgaqHc8sso/pVyUJYWMws3jg21uTJw/LddqIFPcPqP6PzpgbIcZyKI85sFE4HBrQDA8A=="],
+
+    "webmcp-types": ["webmcp-types@0.2.0", "", {}, "sha512-YPuBdkpZbmOKHwH00buRfqNfYWK9o85iL53dn9KLSBAzMPMFVQ3xwtBqKv855lPwlMwAoHFUm7ypreiTPgyrng=="],
 
     "whatwg-mimetype": ["whatwg-mimetype@3.0.0", "", {}, "sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q=="],
 

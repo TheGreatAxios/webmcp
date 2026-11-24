@@ -47,6 +47,50 @@ describe("polyfill", () => {
     );
     expect(JSON.parse(raw!)).toMatchObject({ content: [{ text: "hi" }] });
   });
+
+  test("exposes Tool snapshots via getTools() and executes via executeTool()", async () => {
+    installPolyfill();
+    const controller = new AbortController();
+    await document.modelContext!.registerTool(
+      {
+        name: "book_flight",
+        title: "Book Flight",
+        description: "Books a flight",
+        inputSchema: { type: "object", properties: { dest: { type: "string" } } },
+        outputSchema: { type: "object", properties: { confirmation: { type: "string" } } },
+        annotations: { consequentialHint: true, debugging: false },
+        execute: async ({ dest }) => ({ confirmation: `CONF-${String(dest)}` }),
+      },
+      { signal: controller.signal },
+    );
+
+    const tools = await document.modelContext!.getTools();
+    expect(tools).toHaveLength(1);
+    const [tool] = tools;
+    expect(tool.name).toBe("book_flight");
+    expect(tool.title).toBe("Book Flight");
+    expect(tool.outputSchema).toEqual({ type: "object", properties: { confirmation: { type: "string" } } });
+    expect(tool.annotations).toEqual({
+      readOnlyHint: false,
+      untrustedContentHint: false,
+      consequentialHint: true,
+      debugging: false,
+    });
+
+    const raw = await document.modelContext!.executeTool(tool, { dest: "SFO" });
+    expect(JSON.parse(raw)).toEqual({ confirmation: "CONF-SFO" });
+
+    // Stale Tool snapshot fails after unregistration, even if re-registered under same name
+    controller.abort();
+    await document.modelContext!.registerTool({
+      name: "book_flight",
+      description: "Re-registered",
+      execute: async () => ({ ok: true }),
+    });
+    await expect(document.modelContext!.executeTool(tool, { dest: "LAX" })).rejects.toThrow(
+      /no longer registered/,
+    );
+  });
 });
 
 describe("journey filtering", () => {

@@ -6,6 +6,8 @@ export type {
   BridgeToolSummary,
   CallToolResult,
   ContentBlock,
+  ExecuteToolOptions,
+  GetToolsOptions,
   JourneyDefinition,
   JourneyRegistry,
   JsonSchema,
@@ -15,6 +17,9 @@ export type {
   ToolAnnotations,
   ToolDescriptor,
   ToolExecuteCallback,
+  ToolExecuteCallbackOptions,
+  ToolSnapshot,
+  WebMCP,
 } from "./types";
 
 export { createToolRegistry, type ToolRegistry } from "./registry";

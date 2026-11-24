@@ -69,8 +69,13 @@ export class PageSession {
       const pending = this.#pending.get(msg.id);
       if (!pending) return;
       this.#pending.delete(msg.id);
-      if ("error" in msg.result && typeof msg.result.error === "string") {
-        pending.reject(new Error(msg.result.error));
+      if (
+        typeof msg.result === "object" &&
+        msg.result !== null &&
+        "error" in msg.result &&
+        typeof (msg.result as { error?: unknown }).error === "string"
+      ) {
+        pending.reject(new Error((msg.result as { error: string }).error));
       } else {
         pending.resolve(msg.result);
       }
