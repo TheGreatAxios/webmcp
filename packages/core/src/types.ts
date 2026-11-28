@@ -29,6 +29,7 @@ export interface CallToolResult {
 
 export interface ToolExecuteCallbackOptions {
   signal: AbortSignal;
+  invocation?: import("./experimental/continuations").ExperimentalModelContextToolInvocation;
 }
 
 export type ToolExecuteCallback = (

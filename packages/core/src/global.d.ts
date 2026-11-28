@@ -24,6 +24,9 @@ export interface ModelContext extends EventTarget {
 
 declare global {
   namespace WebMCP {
+    interface ToolExecuteCallbackOptions {
+      invocation?: import("./experimental/continuations").ExperimentalModelContextToolInvocation;
+    }
     interface ModelContext {
       waitForToolsUntil?(promise: Promise<unknown>): void;
     }

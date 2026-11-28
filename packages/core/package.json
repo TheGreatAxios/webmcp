@@ -39,5 +39,8 @@
   },
   "dependencies": {
     "@w3c/webmcp-polyfill": "^0.2.0"
+  },
+  "devDependencies": {
+    "happy-dom": "^21.0.4"
   }
 }

@@ -27,6 +27,7 @@ export {
   awaitToolsStable,
   cleanupPolyfill,
   executeToolForBridge,
+  experimental_getContinuationManager,
   getJourneyRegistry,
   getRegistry,
   installPolyfill,
@@ -49,6 +50,19 @@ export {
 } from "./elements";
 
 export { experimental_createJourneyRegistry } from "./experimental/journey";
+export {
+  experimental_createContinuationManager,
+  type ContinuationHandle,
+  type ContinuationManager,
+  type ExperimentalModelContextToolInvocation,
+} from "./experimental/continuations";
+export {
+  experimental_buildFormInputSchema,
+  experimental_enableDeclarativeForms,
+  type DeclarativeFormsController,
+  type DeclarativeFormsOptions,
+  type DeclarativeSubmitEvent,
+} from "./experimental/declarative";
 
 export {
   assertToolName,
