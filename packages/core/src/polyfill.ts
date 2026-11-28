@@ -4,6 +4,10 @@ import {
   createToolCancelEvent,
   ensureEventConstructors,
 } from "./events";
+import {
+  experimental_createContinuationManager,
+  type ContinuationManager,
+} from "./experimental/continuations";
 import { isToolVisibleToCaller } from "./origin-policy";
 import type {
   BridgeToolSummary,
@@ -27,6 +31,11 @@ let journeyRegistry: JourneyRegistry | null = null;
 let usedW3cPolyfill = false;
 let w3cPolyfillInstalled = false;
 const stabilityPromises = new Set<Promise<unknown>>();
+const continuationManager: ContinuationManager = experimental_createContinuationManager();
+
+export function experimental_getContinuationManager(): ContinuationManager {
+  return continuationManager;
+}
 
 export function awaitToolsStable(): Promise<void> {
   if (stabilityPromises.size === 0) return Promise.resolve();
@@ -160,10 +169,12 @@ function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMC
       };
       options?.signal?.addEventListener("abort", onCallerAbort, { once: true });
 
+      const invocationHandle = continuationManager.createInvocation(controller.signal);
       try {
         const execPromise = Promise.resolve(
           reg.descriptor.execute(inputObject as Record<string, unknown>, {
             signal: controller.signal,
+            invocation: invocationHandle.invocation,
           }),
         );
         // Per W3C WebMCP PR #371: fire `toolactivated` after invoking execute.
@@ -181,6 +192,7 @@ function createFallbackModelContext(registry: ToolRegistry): EventTarget & WebMC
           "OperationError",
         );
       } finally {
+        invocationHandle.settle();
         options?.signal?.removeEventListener("abort", onCallerAbort);
       }
     },
